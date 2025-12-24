@@ -1,4 +1,4 @@
-# Density
+# density.report
 
 A lightweight MVP that maps a channel's posting cadence over the last 365 days.
 Posting frequency tracker for YouTube channels that turns uploads into a

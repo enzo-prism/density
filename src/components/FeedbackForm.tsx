@@ -58,7 +58,7 @@ export default function FeedbackForm() {
             Thanks for the feedback.
           </p>
           <p className="text-sm text-muted-foreground">
-            We read every note and use it to improve Density.
+            We read every note and use it to improve density.report.
           </p>
         </div>
         <Button asChild className="h-10 rounded-full px-6 text-sm font-semibold">

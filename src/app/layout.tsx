@@ -27,10 +27,10 @@ const sfDisplay = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Density",
+  title: "density.report",
   description: "Posting frequency insights with heatmaps and streak stats.",
   openGraph: {
-    title: "Density",
+    title: "density.report",
     description: "Posting frequency insights with heatmaps and streak stats.",
     type: "website",
   },

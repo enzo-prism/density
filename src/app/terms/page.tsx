@@ -10,7 +10,7 @@ export default function TermsPage() {
     <AppShell size="narrow">
       <PageHeader
         title="Terms"
-        subtitle="By using Density, you agree to be bound by YouTube&apos;s Terms of Service."
+        subtitle="By using density.report, you agree to be bound by YouTube&apos;s Terms of Service."
       />
 
       <Button asChild variant="outline" size="sm" className="w-fit">
@@ -24,7 +24,7 @@ export default function TermsPage() {
               Service overview
             </h2>
             <p>
-              Density provides posting-frequency insights for public YouTube
+              density.report provides posting-frequency insights for public YouTube
               channels by analyzing public metadata from YouTube API Services.
             </p>
           </section>

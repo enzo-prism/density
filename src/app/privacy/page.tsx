@@ -10,7 +10,7 @@ export default function PrivacyPage() {
     <AppShell size="narrow">
       <PageHeader
         title="Privacy Policy"
-        subtitle="This policy explains what information Density accesses, how it is used, and what is stored."
+        subtitle="This policy explains what information density.report accesses, how it is used, and what is stored."
       />
 
       <Button asChild variant="outline" size="sm" className="w-fit">
@@ -24,7 +24,7 @@ export default function PrivacyPage() {
               YouTube API Services
             </h2>
             <p>
-              Density uses YouTube API Services to retrieve public channel and
+              density.report uses YouTube API Services to retrieve public channel and
               upload information. Only public uploads are counted.
             </p>
           </section>
