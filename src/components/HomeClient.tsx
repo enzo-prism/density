@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Calendar, Check, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import Heatmap from "@/components/Heatmap";
@@ -47,6 +47,10 @@ const examples = [
   {
     label: "Prism",
     value: "https://www.youtube.com/@the_design_prism",
+  },
+  {
+    label: "TBPN",
+    value: "https://www.youtube.com/@TBPNLive",
   },
   {
     label: "Joe Rogan",
@@ -561,11 +565,8 @@ export default function HomeClient() {
                 disabled={
                   loading || channelInput.trim().length === 0 || !agreedToPrivacy
                 }
-                className="w-full gap-3 uppercase tracking-[0.18em] text-sm sm:text-base h-12"
+                className="w-full h-12 rounded-full text-sm sm:text-base font-semibold tracking-wide"
               >
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-foreground ring-1 ring-border">
-                  <Calendar className="h-5 w-5" aria-hidden="true" />
-                </span>
                 {loading ? "Analyzing..." : "Analyze"}
               </Button>
               <div className="flex items-start gap-2">
