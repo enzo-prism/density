@@ -270,7 +270,7 @@ export default function QuoteTicker({ className }: QuoteTickerProps) {
   return (
     <Card
       className={cn(
-        "relative overflow-hidden rounded-none border-x-0 border-t-0 bg-card/95 shadow-none",
+        "relative overflow-hidden rounded-none border-x-0 border-t-0 bg-card/95 shadow-none dark:bg-black",
         className
       )}
     >
@@ -289,7 +289,7 @@ export default function QuoteTicker({ className }: QuoteTickerProps) {
         </p>
         <span
           className={cn(
-            "hidden text-[11px] font-semibold uppercase tracking-[0.2em] transition-[opacity,transform,filter] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:inline",
+            "hidden text-xs italic transition-[opacity,transform,filter] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:inline",
             "will-change-[opacity,transform,filter] motion-reduce:transform-none",
             isVisible
               ? "opacity-100 translate-y-0 blur-0"
