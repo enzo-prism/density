@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
@@ -26,8 +26,16 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { clampLookbackDays } from "@/lib/dates";
 import type { AnalyzeErrorResponse, AnalyzeResponse } from "@/lib/types";
 
 const examples = [
@@ -59,6 +67,14 @@ const suggestedTimezones = [
   "Asia/Singapore",
   "Australia/Sydney",
 ];
+const rangePresets = [
+  { label: "Last 30 days", value: 30 },
+  { label: "Last 90 days", value: 90 },
+  { label: "Last 180 days", value: 180 },
+  { label: "Last 365 days", value: 365 },
+  { label: "Last 2 years", value: 730 },
+  { label: "Last 10 years", value: 3650 },
+];
 
 function getInitials(title: string) {
   const parts = title.trim().split(/\s+/).filter(Boolean);
@@ -76,11 +92,15 @@ export default function HomeClient() {
   const searchParams = useSearchParams();
   const queryChannel = searchParams.get("c");
   const queryTimezone = searchParams.get("tz");
+  const queryDays = searchParams.get("days");
 
   const [channelInput, setChannelInput] = useState("");
   const [timezone, setTimezone] = useState("UTC");
   const [timezones, setTimezones] = useState(suggestedTimezones);
   const [timezoneOpen, setTimezoneOpen] = useState(false);
+  const [lookbackDays, setLookbackDays] = useState(365);
+  const [rangeSelection, setRangeSelection] = useState("365");
+  const [customDaysInput, setCustomDaysInput] = useState("365");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -96,6 +116,21 @@ export default function HomeClient() {
       }
     }
   }, [queryTimezone]);
+
+  useEffect(() => {
+    if (!queryDays) {
+      return;
+    }
+    const parsed = Number(queryDays);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    const clamped = clampLookbackDays(parsed);
+    setLookbackDays(clamped);
+    setCustomDaysInput(String(clamped));
+    const isPreset = rangePresets.some((preset) => preset.value === clamped);
+    setRangeSelection(isPreset ? String(clamped) : "custom");
+  }, [queryDays]);
 
   useEffect(() => {
     if (typeof Intl === "undefined") {
@@ -140,9 +175,17 @@ export default function HomeClient() {
   };
 
   const analyze = useCallback(
-    async (channelValue: string, timezoneValue: string, updateUrl = true) => {
+    async (
+      channelValue: string,
+      timezoneValue: string,
+      updateUrl = true,
+      lookbackOverride?: number
+    ) => {
       const trimmedChannel = channelValue.trim();
       const trimmedTimezone = timezoneValue.trim();
+      const sanitizedLookback = clampLookbackDays(
+        lookbackOverride ?? lookbackDays
+      );
       if (!trimmedChannel) {
         setError("Channel input is required.");
         return;
@@ -158,6 +201,7 @@ export default function HomeClient() {
         const params = new URLSearchParams({
           c: trimmedChannel,
           tz: trimmedTimezone,
+          days: String(sanitizedLookback),
         });
         router.replace(`/?${params.toString()}`);
       }
@@ -174,6 +218,7 @@ export default function HomeClient() {
           body: JSON.stringify({
             channel: trimmedChannel,
             timezone: trimmedTimezone,
+            lookbackDays: sanitizedLookback,
           }),
         });
 
@@ -191,6 +236,14 @@ export default function HomeClient() {
 
         setResult(data as AnalyzeResponse);
         setTimezone((data as AnalyzeResponse).timezone);
+        setLookbackDays((data as AnalyzeResponse).lookbackDays);
+        setCustomDaysInput(String((data as AnalyzeResponse).lookbackDays));
+        const selection = rangePresets.some(
+          (preset) => preset.value === (data as AnalyzeResponse).lookbackDays
+        )
+          ? String((data as AnalyzeResponse).lookbackDays)
+          : "custom";
+        setRangeSelection(selection);
       } catch {
         setError("Failed to reach the analyzer. Please try again.");
         setResult(null);
@@ -199,7 +252,7 @@ export default function HomeClient() {
         setLoading(false);
       }
     },
-    [agreedToPrivacy, loading, router]
+    [agreedToPrivacy, loading, lookbackDays, router]
   );
 
   const handleAnalyze = useCallback(async () => {
@@ -219,8 +272,27 @@ export default function HomeClient() {
     autoRunRef.current = true;
     setChannelInput(queryChannel);
     setTimezone(queryTimezone);
-    void analyze(queryChannel, queryTimezone, false);
-  }, [queryChannel, queryTimezone, privacyReady, agreedToPrivacy, analyze]);
+    const parsedDays = queryDays ? Number(queryDays) : NaN;
+    let clampedDays = lookbackDays;
+    if (Number.isFinite(parsedDays)) {
+      clampedDays = clampLookbackDays(parsedDays);
+      setLookbackDays(clampedDays);
+      setCustomDaysInput(String(clampedDays));
+      const selection = rangePresets.some((preset) => preset.value === clampedDays)
+        ? String(clampedDays)
+        : "custom";
+      setRangeSelection(selection);
+    }
+    void analyze(queryChannel, queryTimezone, false, clampedDays);
+  }, [
+    queryChannel,
+    queryTimezone,
+    queryDays,
+    privacyReady,
+    agreedToPrivacy,
+    analyze,
+    lookbackDays,
+  ]);
 
   const channelUrl = result
     ? result.channel.handle
@@ -239,6 +311,43 @@ export default function HomeClient() {
   const remainingOptions = timezoneOptions.filter(
     (zone) => !suggestedOptions.includes(zone)
   );
+  const handleRangeChange = (value: string) => {
+    setRangeSelection(value);
+    if (value === "custom") {
+      setCustomDaysInput(String(lookbackDays));
+      return;
+    }
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) {
+      return;
+    }
+    setLookbackDays(parsed);
+    setCustomDaysInput(String(parsed));
+  };
+
+  const handleCustomDaysChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setCustomDaysInput(value);
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      setLookbackDays(parsed);
+    }
+  };
+
+  const handleCustomDaysBlur = () => {
+    const parsed = Number(customDaysInput);
+    if (!Number.isFinite(parsed)) {
+      setCustomDaysInput(String(lookbackDays));
+      return;
+    }
+    const clamped = clampLookbackDays(parsed);
+    setLookbackDays(clamped);
+    setCustomDaysInput(String(clamped));
+    const selection = rangePresets.some((preset) => preset.value === clamped)
+      ? String(clamped)
+      : "custom";
+    setRangeSelection(selection);
+  };
 
   const handleCopyShareLink = async () => {
     try {
@@ -251,7 +360,19 @@ export default function HomeClient() {
 
   return (
     <AppShell footerChannelUrl={channelUrl ?? undefined}>
-      <PageHeader title="Density" />
+      <PageHeader
+        title="Density"
+        caption={
+          <a
+            href="https://design-prism.com"
+            target="_blank"
+            rel="noreferrer"
+            className="transition-colors hover:text-foreground"
+          >
+            developed by prism in silicon valley
+          </a>
+        }
+      />
 
       <Card
         className="motion-safe:animate-[fade-up_0.6s_ease-out]"
@@ -360,6 +481,43 @@ export default function HomeClient() {
                   </Command>
                 </PopoverContent>
               </Popover>
+              <div className="space-y-3">
+                <Label htmlFor="range">Date range</Label>
+                <Select value={rangeSelection} onValueChange={handleRangeChange}>
+                  <SelectTrigger id="range" className="h-11">
+                    <SelectValue placeholder="Select range" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {rangePresets.map((preset) => (
+                      <SelectItem
+                        key={`range-${preset.value}`}
+                        value={String(preset.value)}
+                      >
+                        {preset.label}
+                      </SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom range</SelectItem>
+                  </SelectContent>
+                </Select>
+                {rangeSelection === "custom" ? (
+                  <div className="space-y-2">
+                    <Label htmlFor="custom-days" className="text-xs">
+                      Custom days (30–3650)
+                    </Label>
+                    <Input
+                      id="custom-days"
+                      type="number"
+                      inputMode="numeric"
+                      min={30}
+                      max={3650}
+                      value={customDaysInput}
+                      onChange={handleCustomDaysChange}
+                      onBlur={handleCustomDaysBlur}
+                      className="h-11"
+                    />
+                  </div>
+                ) : null}
+              </div>
               <Button
                 type="submit"
                 size="lg"

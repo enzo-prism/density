@@ -1,11 +1,13 @@
 "use client";
 
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 type PageHeaderProps = {
   title: string;
   subtitle?: string;
+  caption?: ReactNode;
   badgeLabel?: string;
   className?: string;
 };
@@ -13,6 +15,7 @@ type PageHeaderProps = {
 export default function PageHeader({
   title,
   subtitle,
+  caption,
   badgeLabel,
   className,
 }: PageHeaderProps) {
@@ -33,6 +36,11 @@ export default function PageHeader({
         <p className="text-sm text-muted-foreground sm:text-base md:text-lg">
           {subtitle}
         </p>
+      ) : null}
+      {caption ? (
+        <div className="text-[11px] font-medium tracking-[0.16em] text-muted-foreground/80">
+          {caption}
+        </div>
       ) : null}
     </header>
   );
