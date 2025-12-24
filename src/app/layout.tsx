@@ -34,6 +34,27 @@ export const metadata: Metadata = {
     description: "Posting frequency insights with heatmaps and streak stats.",
     type: "website",
   },
+  icons: {
+    icon: [
+      {
+        url: "/favicon%20small.png",
+        sizes: "32x32",
+        type: "image/png",
+      },
+      {
+        url: "/Favicon%20large.png",
+        sizes: "256x256",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: "/Favicon%20large.png",
+        sizes: "256x256",
+        type: "image/png",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

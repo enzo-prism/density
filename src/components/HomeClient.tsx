@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import Heatmap from "@/components/Heatmap";
@@ -14,6 +14,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -372,20 +377,20 @@ export default function HomeClient() {
             engineered by prism in silicon valley
           </a>
         }
+        logoSrc="/Prism%20Logo.jpg"
       />
 
-      <Card
-        className="motion-safe:animate-[fade-up_0.6s_ease-out]"
+      <div
+        className="mx-auto w-full max-w-2xl motion-safe:animate-[fade-up_0.6s_ease-out]"
         style={{ animationDelay: "80ms" }}
       >
-        <CardContent className="px-4 sm:px-6">
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              handleAnalyze();
-            }}
-            className="grid gap-5 sm:gap-6 md:grid-cols-[1.3fr_0.7fr]"
-          >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            handleAnalyze();
+          }}
+          className="grid gap-5 sm:gap-6"
+        >
             <div className="space-y-3">
               <Label htmlFor="channel">
                 Paste your YouTube channel link or handle
@@ -394,8 +399,8 @@ export default function HomeClient() {
                 id="channel"
                 value={channelInput}
                 onChange={(event) => setChannelInput(event.target.value)}
-                placeholder="https://www.youtube.com/@handle or @handle"
-                className="h-11"
+                placeholder="URL or @handle"
+                className="h-12 text-base"
               />
               <div className="flex flex-wrap gap-2">
                 {examples.map((example) => (
@@ -413,111 +418,139 @@ export default function HomeClient() {
               </div>
             </div>
 
-            <div className="space-y-3">
-              <Label htmlFor="timezone">Timezone</Label>
-              <Popover open={timezoneOpen} onOpenChange={setTimezoneOpen}>
-                <PopoverTrigger asChild>
+            <Collapsible className="space-y-3">
+              <div className="flex items-center justify-between">
+                <CollapsibleTrigger asChild>
                   <Button
-                    id="timezone"
                     type="button"
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={timezoneOpen}
-                    className="h-11 w-full justify-between font-normal"
+                    variant="ghost"
+                    size="sm"
+                    className="group gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
                   >
-                    <span className="line-clamp-1 text-left">
-                      {timezone || "Select timezone"}
-                    </span>
-                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                    Advanced options
+                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
                   </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                  <Command>
-                    <CommandInput placeholder="Search timezone..." />
-                    <CommandList>
-                      <CommandEmpty>No timezone found.</CommandEmpty>
-                      <CommandGroup heading="Suggested">
-                        {suggestedOptions.map((zone) => (
-                          <CommandItem
-                            key={`tz-suggested-${zone}`}
-                            value={zone}
-                            onSelect={() => {
-                              setTimezone(zone);
-                              setTimezoneOpen(false);
-                            }}
-                          >
-                            <Check
-                              className={`mr-2 h-4 w-4 ${
-                                timezone === zone ? "opacity-100" : "opacity-0"
-                              }`}
-                            />
-                            {zone}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                      {remainingOptions.length > 0 ? <CommandSeparator /> : null}
-                      {remainingOptions.length > 0 ? (
-                        <CommandGroup heading="All timezones">
-                          {remainingOptions.map((zone) => (
-                            <CommandItem
-                              key={`tz-${zone}`}
-                              value={zone}
-                              onSelect={() => {
-                                setTimezone(zone);
-                                setTimezoneOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={`mr-2 h-4 w-4 ${
-                                  timezone === zone ? "opacity-100" : "opacity-0"
-                                }`}
-                              />
-                              {zone}
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      ) : null}
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-              <div className="space-y-3">
-                <Label htmlFor="range">Date range</Label>
-                <Select value={rangeSelection} onValueChange={handleRangeChange}>
-                  <SelectTrigger id="range" className="h-11">
-                    <SelectValue placeholder="Select range" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {rangePresets.map((preset) => (
-                      <SelectItem
-                        key={`range-${preset.value}`}
-                        value={String(preset.value)}
-                      >
-                        {preset.label}
-                      </SelectItem>
-                    ))}
-                    <SelectItem value="custom">Custom range</SelectItem>
-                  </SelectContent>
-                </Select>
-                {rangeSelection === "custom" ? (
-                  <div className="space-y-2">
-                    <Label htmlFor="custom-days" className="text-xs">
-                      Custom days (30–3650)
-                    </Label>
-                    <Input
-                      id="custom-days"
-                      type="number"
-                      inputMode="numeric"
-                      min={30}
-                      max={3650}
-                      value={customDaysInput}
-                      onChange={handleCustomDaysChange}
-                      onBlur={handleCustomDaysBlur}
-                      className="h-11"
-                    />
-                  </div>
-                ) : null}
+                </CollapsibleTrigger>
               </div>
+              <CollapsibleContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-3">
+                    <Label htmlFor="timezone">Timezone</Label>
+                    <Popover open={timezoneOpen} onOpenChange={setTimezoneOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="timezone"
+                          type="button"
+                          variant="outline"
+                          role="combobox"
+                          aria-expanded={timezoneOpen}
+                          className="h-11 w-full justify-between font-normal"
+                        >
+                          <span className="line-clamp-1 text-left">
+                            {timezone || "Select timezone"}
+                          </span>
+                          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                        <Command>
+                          <CommandInput placeholder="Search timezone..." />
+                          <CommandList>
+                            <CommandEmpty>No timezone found.</CommandEmpty>
+                            <CommandGroup heading="Suggested">
+                              {suggestedOptions.map((zone) => (
+                                <CommandItem
+                                  key={`tz-suggested-${zone}`}
+                                  value={zone}
+                                  onSelect={() => {
+                                    setTimezone(zone);
+                                    setTimezoneOpen(false);
+                                  }}
+                                >
+                                  <Check
+                                    className={`mr-2 h-4 w-4 ${
+                                      timezone === zone
+                                        ? "opacity-100"
+                                        : "opacity-0"
+                                    }`}
+                                  />
+                                  {zone}
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                            {remainingOptions.length > 0 ? (
+                              <CommandSeparator />
+                            ) : null}
+                            {remainingOptions.length > 0 ? (
+                              <CommandGroup heading="All timezones">
+                                {remainingOptions.map((zone) => (
+                                  <CommandItem
+                                    key={`tz-${zone}`}
+                                    value={zone}
+                                    onSelect={() => {
+                                      setTimezone(zone);
+                                      setTimezoneOpen(false);
+                                    }}
+                                  >
+                                    <Check
+                                      className={`mr-2 h-4 w-4 ${
+                                        timezone === zone
+                                          ? "opacity-100"
+                                          : "opacity-0"
+                                      }`}
+                                    />
+                                    {zone}
+                                  </CommandItem>
+                                ))}
+                              </CommandGroup>
+                            ) : null}
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="range">Date range</Label>
+                    <Select value={rangeSelection} onValueChange={handleRangeChange}>
+                      <SelectTrigger id="range" className="h-11">
+                        <SelectValue placeholder="Select range" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {rangePresets.map((preset) => (
+                          <SelectItem
+                            key={`range-${preset.value}`}
+                            value={String(preset.value)}
+                          >
+                            {preset.label}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="custom">Custom range</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {rangeSelection === "custom" ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="custom-days" className="text-xs">
+                          Custom days (30–3650)
+                        </Label>
+                        <Input
+                          id="custom-days"
+                          type="number"
+                          inputMode="numeric"
+                          min={30}
+                          max={3650}
+                          value={customDaysInput}
+                          onChange={handleCustomDaysChange}
+                          onBlur={handleCustomDaysBlur}
+                          className="h-11"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <div className="space-y-3">
               <Button
                 type="submit"
                 size="lg"
@@ -550,9 +583,8 @@ export default function HomeClient() {
                 </Label>
               </div>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+        </form>
+      </div>
 
       {error ? (
         <Alert variant="destructive">
@@ -563,111 +595,122 @@ export default function HomeClient() {
 
       {showResults ? (
         <section
-          className="space-y-6 motion-safe:animate-[fade-up_0.6s_ease-out]"
+          className="flex flex-col gap-6 motion-safe:animate-[fade-up_0.6s_ease-out]"
           style={{ animationDelay: "140ms" }}
         >
-          {showSkeletons ? (
-            <Card>
-              <CardContent className="space-y-4 pt-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <Skeleton className="h-12 w-12 rounded-lg sm:h-14 sm:w-14" />
-                    <div className="space-y-2">
-                      <Skeleton className="h-5 w-48" />
-                      <Skeleton className="h-4 w-32" />
+          <div className="order-1">
+            {showSkeletons ? (
+              <Card>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <Skeleton className="h-12 w-12 rounded-lg sm:h-14 sm:w-14" />
+                      <div className="space-y-2">
+                        <Skeleton className="h-5 w-48" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <Skeleton className="h-9 w-full sm:w-32" />
+                      <Skeleton className="h-9 w-full sm:w-36" />
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    <Skeleton className="h-9 w-full sm:w-32" />
-                    <Skeleton className="h-9 w-full sm:w-36" />
-                  </div>
-                </div>
-                <Separator />
-                <Skeleton className="h-4 w-72" />
-              </CardContent>
-            </Card>
-          ) : result ? (
-            <Card>
-              <CardContent className="space-y-4 pt-6">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
-                      <AvatarImage
-                        src={result.channel.thumbnailUrl}
-                        alt={`${result.channel.title} thumbnail`}
-                      />
-                      <AvatarFallback>
-                        {getInitials(result.channel.title)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <CardTitle className="text-xl font-display">
-                        {result.channel.title}
-                      </CardTitle>
-                      {result.channel.handle ? (
-                        <CardDescription>
-                          {result.channel.handle}
-                        </CardDescription>
+                  <Separator />
+                  <Skeleton className="h-4 w-72" />
+                </CardContent>
+              </Card>
+            ) : result ? (
+              <Card>
+                <CardContent className="space-y-4 pt-6">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
+                        <AvatarImage
+                          src={result.channel.thumbnailUrl}
+                          alt={`${result.channel.title} thumbnail`}
+                        />
+                        <AvatarFallback>
+                          {getInitials(result.channel.title)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle className="text-xl font-display">
+                          {result.channel.title}
+                        </CardTitle>
+                        {result.channel.handle ? (
+                          <CardDescription>
+                            {result.channel.handle}
+                          </CardDescription>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                      {channelUrl ? (
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="w-full sm:w-auto"
+                        >
+                          <a href={channelUrl} target="_blank" rel="noreferrer">
+                            View on YouTube
+                          </a>
+                        </Button>
                       ) : null}
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="w-full sm:w-auto"
+                        onClick={handleCopyShareLink}
+                      >
+                        Copy share link
+                      </Button>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                    {channelUrl ? (
-                      <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-                        <a href={channelUrl} target="_blank" rel="noreferrer">
-                          View on YouTube
-                        </a>
-                      </Button>
-                    ) : null}
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="w-full sm:w-auto"
-                      onClick={handleCopyShareLink}
-                    >
-                      Copy share link
-                    </Button>
+                  <Separator />
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+                    <span>
+                      {result.startDate} → {result.endDate}
+                    </span>
+                    <span className="hidden sm:inline">•</span>
+                    <span>{result.lookbackDays} days</span>
+                    <span className="hidden sm:inline">•</span>
+                    <span>{result.timezone}</span>
                   </div>
-                </div>
-                <Separator />
-                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
-                  <span>
-                    {result.startDate} → {result.endDate}
-                  </span>
-                  <span className="hidden sm:inline">•</span>
-                  <span>{result.lookbackDays} days</span>
-                  <span className="hidden sm:inline">•</span>
-                  <span>{result.timezone}</span>
-                </div>
-              </CardContent>
-            </Card>
-          ) : null}
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
 
-          {showSkeletons ? (
-            <div className="grid gap-4 md:grid-cols-3">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton key={`stat-skel-${index}`} className="h-28 w-full" />
-              ))}
-            </div>
-          ) : result ? (
-            <StatsCards stats={result.stats} />
-          ) : null}
+          <div className="order-2 sm:order-3">
+            {showSkeletons ? (
+              <Card>
+                <CardContent className="space-y-4 pt-6">
+                  <Skeleton className="h-5 w-36" />
+                  <Skeleton className="h-48 w-full" />
+                  <Skeleton className="h-4 w-40" />
+                </CardContent>
+              </Card>
+            ) : result ? (
+              <Heatmap
+                startDate={result.startDate}
+                endDate={result.endDate}
+                days={result.days}
+              />
+            ) : null}
+          </div>
 
-          {showSkeletons ? (
-            <Card>
-              <CardContent className="space-y-4 pt-6">
-                <Skeleton className="h-5 w-36" />
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-4 w-40" />
-              </CardContent>
-            </Card>
-          ) : result ? (
-            <Heatmap
-              startDate={result.startDate}
-              endDate={result.endDate}
-              days={result.days}
-            />
-          ) : null}
+          <div className="order-3 sm:order-2">
+            {showSkeletons ? (
+              <div className="grid gap-4 md:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton key={`stat-skel-${index}`} className="h-28 w-full" />
+                ))}
+              </div>
+            ) : result ? (
+              <StatsCards stats={result.stats} />
+            ) : null}
+          </div>
         </section>
       ) : null}
     </AppShell>
