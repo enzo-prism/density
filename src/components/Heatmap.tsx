@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { cva } from "class-variance-authority";
 
 const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -18,17 +19,34 @@ function getWeekdayIndex(date: string): number {
   return (utcDay + 6) % 7;
 }
 
-function getIntensityClass(count: number) {
+const heatmapCellVariants = cva(
+  "h-3.5 w-3.5 rounded-sm border border-border transition-colors",
+  {
+    variants: {
+      intensity: {
+        none: "bg-muted",
+        low: "bg-muted-foreground/30",
+        mid: "bg-muted-foreground/60",
+        high: "bg-foreground",
+      },
+    },
+    defaultVariants: {
+      intensity: "none",
+    },
+  }
+);
+
+function getIntensity(count: number) {
   if (count >= 4) {
-    return "bg-foreground";
+    return "high";
   }
   if (count >= 2) {
-    return "bg-muted-foreground/60";
+    return "mid";
   }
   if (count === 1) {
-    return "bg-muted-foreground/30";
+    return "low";
   }
-  return "bg-muted";
+  return "none";
 }
 
 type HeatmapProps = {
@@ -85,8 +103,7 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
                         role="img"
                         aria-label={label}
                         className={cn(
-                          "h-3.5 w-3.5 rounded-sm border border-border transition-colors",
-                          getIntensityClass(count)
+                          heatmapCellVariants({ intensity: getIntensity(count) })
                         )}
                       />
                     </TooltipTrigger>
@@ -104,8 +121,8 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
               <span
                 key={`legend-${count}`}
                 className={cn(
-                  "h-3 w-3 rounded-sm border border-border",
-                  getIntensityClass(count)
+                  heatmapCellVariants({ intensity: getIntensity(count) }),
+                  "h-3 w-3"
                 )}
               />
             ))}

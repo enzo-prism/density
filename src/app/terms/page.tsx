@@ -1,25 +1,18 @@
-import Footer from "@/components/Footer";
-import { Badge } from "@/components/ui/badge";
+import AppShell from "@/components/AppShell";
+import PageHeader from "@/components/PageHeader";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-12 md:py-16">
-        <header className="space-y-4">
-          <Badge
-            variant="secondary"
-            className="w-fit text-xs font-semibold uppercase tracking-[0.25em]"
-          >
-            Density
-          </Badge>
-          <h1 className="text-4xl font-semibold">Terms</h1>
-          <p className="text-sm text-muted-foreground">
-            By using Density, you agree to be bound by YouTube&apos;s Terms of
-            Service.
-          </p>
-        </header>
+    <AppShell size="narrow">
+      <PageHeader
+        title="Terms"
+        subtitle="By using Density, you agree to be bound by YouTube&apos;s Terms of Service."
+      />
 
-        <main className="mt-8 space-y-6 text-sm text-muted-foreground">
+      <Card>
+        <CardContent className="space-y-6 pt-6 text-sm text-muted-foreground">
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">
               Service overview
@@ -30,6 +23,8 @@ export default function TermsPage() {
             </p>
           </section>
 
+          <Separator />
+
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">
               Acceptable use
@@ -39,6 +34,8 @@ export default function TermsPage() {
               or attempt to disrupt the service or its underlying APIs.
             </p>
           </section>
+
+          <Separator />
 
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">
@@ -51,17 +48,15 @@ export default function TermsPage() {
                 href="https://www.youtube.com/t/terms"
                 target="_blank"
                 rel="noreferrer"
-                className="font-semibold text-foreground underline-offset-4 hover:underline"
+                className="font-semibold text-foreground underline underline-offset-4"
               >
                 https://www.youtube.com/t/terms
               </a>
               .
             </p>
           </section>
-        </main>
-
-        <Footer className="mt-auto" />
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </AppShell>
   );
 }

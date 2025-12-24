@@ -1,25 +1,18 @@
-import Footer from "@/components/Footer";
-import { Badge } from "@/components/ui/badge";
+import AppShell from "@/components/AppShell";
+import PageHeader from "@/components/PageHeader";
+import { Card, CardContent } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-12 md:py-16">
-        <header className="space-y-4">
-          <Badge
-            variant="secondary"
-            className="w-fit text-xs font-semibold uppercase tracking-[0.25em]"
-          >
-            Density
-          </Badge>
-          <h1 className="text-4xl font-semibold">Privacy Policy</h1>
-          <p className="text-sm text-muted-foreground">
-            This policy explains what information Density accesses, how it is
-            used, and what is stored.
-          </p>
-        </header>
+    <AppShell size="narrow">
+      <PageHeader
+        title="Privacy Policy"
+        subtitle="This policy explains what information Density accesses, how it is used, and what is stored."
+      />
 
-        <main className="mt-8 space-y-6 text-sm text-muted-foreground">
+      <Card>
+        <CardContent className="space-y-6 pt-6 text-sm text-muted-foreground">
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">
               YouTube API Services
@@ -29,6 +22,8 @@ export default function PrivacyPage() {
               upload information. Only public uploads are counted.
             </p>
           </section>
+
+          <Separator />
 
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">
@@ -46,6 +41,8 @@ export default function PrivacyPage() {
             </ul>
           </section>
 
+          <Separator />
+
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">
               How we use and store data
@@ -58,6 +55,8 @@ export default function PrivacyPage() {
             </p>
           </section>
 
+          <Separator />
+
           <section className="space-y-2">
             <h2 className="text-base font-semibold text-foreground">
               Google Privacy Policy
@@ -68,17 +67,15 @@ export default function PrivacyPage() {
                 href="https://policies.google.com/privacy"
                 target="_blank"
                 rel="noreferrer"
-                className="font-semibold text-foreground underline-offset-4 hover:underline"
+                className="font-semibold text-foreground underline underline-offset-4"
               >
                 https://policies.google.com/privacy
               </a>
               .
             </p>
           </section>
-        </main>
-
-        <Footer className="mt-auto" />
-      </div>
-    </div>
+        </CardContent>
+      </Card>
+    </AppShell>
   );
 }
