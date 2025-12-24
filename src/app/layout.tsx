@@ -3,7 +3,6 @@ import Script from "next/script";
 import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
 const sfText = localFont({
@@ -11,7 +10,6 @@ const sfText = localFont({
   display: "swap",
   src: [
     { path: "../../font/SF-Pro-Text-Regular.otf", weight: "400", style: "normal" },
-    { path: "../../font/SF-Pro-Text-RegularItalic.otf", weight: "400", style: "italic" },
     { path: "../../font/SF-Pro-Text-Medium.otf", weight: "500", style: "normal" },
     { path: "../../font/SF-Pro-Text-Semibold.otf", weight: "600", style: "normal" },
   ],
@@ -20,10 +18,9 @@ const sfText = localFont({
 const sfDisplay = localFont({
   variable: "--font-sf-display",
   display: "swap",
+  preload: false,
   src: [
-    { path: "../../font/SF-Pro-Display-Medium.otf", weight: "500", style: "normal" },
     { path: "../../font/SF-Pro-Display-Semibold.otf", weight: "600", style: "normal" },
-    { path: "../../font/SF-Pro-Display-Bold.otf", weight: "700", style: "normal" },
   ],
 });
 
@@ -67,22 +64,20 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${sfText.variable} ${sfDisplay.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
-          <TooltipProvider delayDuration={150}>
-            {children}
-            <Toaster />
-          </TooltipProvider>
+          {children}
+          <Toaster />
         </ThemeProvider>
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-YTBLKGMW5K"
-          strategy="afterInteractive"
+          strategy="lazyOnload"
         />
-        <Script id="google-analytics" strategy="afterInteractive">
+        <Script id="google-analytics" strategy="lazyOnload">
           {`window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 gtag('js', new Date());
 gtag('config', 'G-YTBLKGMW5K');`}
         </Script>
-        <Script id="hotjar" strategy="afterInteractive">
+        <Script id="hotjar" strategy="lazyOnload">
           {`(function(h,o,t,j,a,r){
   h.hj=h.hj||function(){(h.hj.q=h.hj.q||[]).push(arguments)};
   h._hjSettings={hjid:6608249,hjsv:6};

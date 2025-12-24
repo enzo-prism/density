@@ -1,8 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import ThemeToggle from "@/components/ThemeToggle";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
+
+const ThemeToggle = dynamic(() => import("@/components/ThemeToggle"), {
+  ssr: false,
+  loading: () => <div className="h-7 w-16" aria-hidden="true" />,
+});
 
 type FooterProps = {
   className?: string;
@@ -20,7 +25,9 @@ export default function Footer({ className, channelUrl }: FooterProps) {
             size="sm"
             className="w-full justify-center gap-2 rounded-full text-[11px] font-semibold uppercase tracking-[0.18em] sm:w-auto"
           >
-            <Link href="/feedback">🫡 Share feedback</Link>
+            <Link href="/feedback" prefetch={false}>
+              🫡 Share feedback
+            </Link>
           </Button>
         </div>
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -38,10 +45,10 @@ export default function Footer({ className, channelUrl }: FooterProps) {
             ) : null}
           </div>
           <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:gap-4">
-            <Link href="/privacy" className="hover:text-foreground">
+            <Link href="/privacy" prefetch={false} className="hover:text-foreground">
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-foreground">
+            <Link href="/terms" prefetch={false} className="hover:text-foreground">
               Terms
             </Link>
             <a

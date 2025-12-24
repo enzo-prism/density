@@ -1,44 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Check, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
-import Heatmap from "@/components/Heatmap";
 import PageHeader from "@/components/PageHeader";
-import StatsCards from "@/components/StatsCards";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  CommandSeparator,
-} from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { clampLookbackDays } from "@/lib/dates";
 import type { AnalyzeErrorResponse, AnalyzeResponse } from "@/lib/types";
@@ -70,16 +44,6 @@ const examples = [
   },
 ];
 const privacyKey = "density_privacy_ack";
-const suggestedTimezones = [
-  "UTC",
-  "America/Los_Angeles",
-  "America/New_York",
-  "Europe/London",
-  "Europe/Paris",
-  "Asia/Tokyo",
-  "Asia/Singapore",
-  "Australia/Sydney",
-];
 const rangePresets = [
   { label: "Last 30 days", value: 30 },
   { label: "Last 90 days", value: 90 },
@@ -89,16 +53,25 @@ const rangePresets = [
   { label: "Last 10 years", value: 3650 },
 ];
 
-function getInitials(title: string) {
-  const parts = title.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) {
-    return "D";
-  }
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
-  }
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
+const HomeAdvancedOptions = dynamic(() => import("./HomeAdvancedOptions"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-lg border border-border p-4 text-xs text-muted-foreground">
+      Loading advanced options...
+    </div>
+  ),
+});
+
+const HomeResults = dynamic(() => import("./HomeResults"), {
+  ssr: false,
+  loading: () => (
+    <div className="space-y-4">
+      <Skeleton className="h-10 w-full" />
+      <Skeleton className="h-48 w-full" />
+      <Skeleton className="h-24 w-full" />
+    </div>
+  ),
+});
 
 export default function HomeClient() {
   const router = useRouter();
@@ -110,8 +83,6 @@ export default function HomeClient() {
 
   const [channelInput, setChannelInput] = useState("");
   const [timezone, setTimezone] = useState("UTC");
-  const [timezones, setTimezones] = useState(suggestedTimezones);
-  const [timezoneOpen, setTimezoneOpen] = useState(false);
   const [lookbackDays, setLookbackDays] = useState(365);
   const [rangeSelection, setRangeSelection] = useState("365");
   const [customDaysInput, setCustomDaysInput] = useState("365");
@@ -121,6 +92,7 @@ export default function HomeClient() {
   const [loading, setLoading] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [privacyReady, setPrivacyReady] = useState(false);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const autoRunRef = useRef(false);
 
   useEffect(() => {
@@ -150,26 +122,6 @@ export default function HomeClient() {
     const isPreset = rangePresets.some((preset) => preset.value === clamped);
     setRangeSelection(isPreset ? String(clamped) : "custom");
   }, [queryDays, queryRange]);
-
-  useEffect(() => {
-    if (typeof Intl === "undefined") {
-      return;
-    }
-    const supportedValuesOf = (Intl as typeof Intl & {
-      supportedValuesOf?: (type: "timeZone") => string[];
-    }).supportedValuesOf;
-    if (!supportedValuesOf) {
-      return;
-    }
-    try {
-      const values = supportedValuesOf("timeZone");
-      if (Array.isArray(values) && values.length > 0) {
-        setTimezones(values);
-      }
-    } catch {
-      // Ignore failures and keep fallback list.
-    }
-  }, []);
 
   useEffect(() => {
     try {
@@ -343,17 +295,6 @@ export default function HomeClient() {
       : `https://www.youtube.com/channel/${result.channel.id}`
     : null;
   const showResults = Boolean(result) || loading;
-  const showSkeletons = loading;
-
-  const timezoneOptions = timezones.includes(timezone)
-    ? timezones
-    : [timezone, ...timezones];
-  const suggestedOptions = Array.from(
-    new Set([timezone, ...suggestedTimezones])
-  ).filter((zone) => timezoneOptions.includes(zone));
-  const remainingOptions = timezoneOptions.filter(
-    (zone) => !suggestedOptions.includes(zone)
-  );
   const handleRangeChange = (value: string) => {
     setRangeSelection(value);
     if (value === "custom") {
@@ -459,138 +400,34 @@ export default function HomeClient() {
               </div>
             </div>
 
-            <Collapsible className="space-y-3">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <CollapsibleTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="group gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Advanced options
-                    <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
-                  </Button>
-                </CollapsibleTrigger>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  data-state={advancedOpen ? "open" : "closed"}
+                  aria-expanded={advancedOpen}
+                  onClick={() => setAdvancedOpen((open) => !open)}
+                  className="group gap-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Advanced options
+                  <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]:rotate-180" />
+                </Button>
               </div>
-              <CollapsibleContent className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-3">
-                    <Label htmlFor="timezone">Timezone</Label>
-                    <Popover open={timezoneOpen} onOpenChange={setTimezoneOpen}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          id="timezone"
-                          type="button"
-                          variant="outline"
-                          role="combobox"
-                          aria-expanded={timezoneOpen}
-                          className="h-11 w-full justify-between font-normal"
-                        >
-                          <span className="line-clamp-1 text-left">
-                            {timezone || "Select timezone"}
-                          </span>
-                          <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
-                        <Command>
-                          <CommandInput placeholder="Search timezone..." />
-                          <CommandList>
-                            <CommandEmpty>No timezone found.</CommandEmpty>
-                            <CommandGroup heading="Suggested">
-                              {suggestedOptions.map((zone) => (
-                                <CommandItem
-                                  key={`tz-suggested-${zone}`}
-                                  value={zone}
-                                  onSelect={() => {
-                                    setTimezone(zone);
-                                    setTimezoneOpen(false);
-                                  }}
-                                >
-                                  <Check
-                                    className={`mr-2 h-4 w-4 ${
-                                      timezone === zone
-                                        ? "opacity-100"
-                                        : "opacity-0"
-                                    }`}
-                                  />
-                                  {zone}
-                                </CommandItem>
-                              ))}
-                            </CommandGroup>
-                            {remainingOptions.length > 0 ? (
-                              <CommandSeparator />
-                            ) : null}
-                            {remainingOptions.length > 0 ? (
-                              <CommandGroup heading="All timezones">
-                                {remainingOptions.map((zone) => (
-                                  <CommandItem
-                                    key={`tz-${zone}`}
-                                    value={zone}
-                                    onSelect={() => {
-                                      setTimezone(zone);
-                                      setTimezoneOpen(false);
-                                    }}
-                                  >
-                                    <Check
-                                      className={`mr-2 h-4 w-4 ${
-                                        timezone === zone
-                                          ? "opacity-100"
-                                          : "opacity-0"
-                                      }`}
-                                    />
-                                    {zone}
-                                  </CommandItem>
-                                ))}
-                              </CommandGroup>
-                            ) : null}
-                          </CommandList>
-                        </Command>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="range">Date range</Label>
-                    <Select value={rangeSelection} onValueChange={handleRangeChange}>
-                      <SelectTrigger id="range" className="h-11">
-                        <SelectValue placeholder="Select range" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {rangePresets.map((preset) => (
-                          <SelectItem
-                            key={`range-${preset.value}`}
-                            value={String(preset.value)}
-                          >
-                            {preset.label}
-                          </SelectItem>
-                        ))}
-                        <SelectItem value="lifetime">Lifetime</SelectItem>
-                        <SelectItem value="custom">Custom range</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {rangeSelection === "custom" ? (
-                      <div className="space-y-2">
-                        <Label htmlFor="custom-days" className="text-xs">
-                          Custom days (30–3650)
-                        </Label>
-                        <Input
-                          id="custom-days"
-                          type="number"
-                          inputMode="numeric"
-                          min={30}
-                          max={3650}
-                          value={customDaysInput}
-                          onChange={handleCustomDaysChange}
-                          onBlur={handleCustomDaysBlur}
-                          className="h-11"
-                        />
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              </CollapsibleContent>
-            </Collapsible>
+              {advancedOpen ? (
+                <HomeAdvancedOptions
+                  timezone={timezone}
+                  onTimezoneChange={setTimezone}
+                  rangeSelection={rangeSelection}
+                  onRangeChange={handleRangeChange}
+                  rangePresets={rangePresets}
+                  customDaysInput={customDaysInput}
+                  onCustomDaysChange={handleCustomDaysChange}
+                  onCustomDaysBlur={handleCustomDaysBlur}
+                />
+              ) : null}
+            </div>
 
             <div className="space-y-3">
               <Button
@@ -618,6 +455,7 @@ export default function HomeClient() {
                   I agree to the{" "}
                   <Link
                     href="/privacy"
+                    prefetch={false}
                     className="font-semibold text-foreground underline underline-offset-4"
                   >
                     Privacy Policy
@@ -636,128 +474,13 @@ export default function HomeClient() {
       ) : null}
 
       {showResults ? (
-        <section
-          className="flex flex-col gap-6 motion-safe:animate-[fade-up_0.6s_ease-out]"
-          style={{ animationDelay: "140ms" }}
-        >
-          <div className="order-1">
-            {showSkeletons ? (
-              <Card>
-                <CardContent className="space-y-4 pt-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <Skeleton className="h-12 w-12 rounded-lg sm:h-14 sm:w-14" />
-                      <div className="space-y-2">
-                        <Skeleton className="h-5 w-48" />
-                        <Skeleton className="h-4 w-32" />
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      <Skeleton className="h-9 w-full sm:w-32" />
-                      <Skeleton className="h-9 w-full sm:w-36" />
-                    </div>
-                  </div>
-                  <Separator />
-                  <Skeleton className="h-4 w-72" />
-                </CardContent>
-              </Card>
-            ) : result ? (
-              <Card>
-                <CardContent className="space-y-4 pt-6">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-                    <div className="flex items-center gap-3 sm:gap-4">
-                      <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
-                        <AvatarImage
-                          src={result.channel.thumbnailUrl}
-                          alt={`${result.channel.title} thumbnail`}
-                        />
-                        <AvatarFallback>
-                          {getInitials(result.channel.title)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <CardTitle className="text-xl font-display">
-                          {result.channel.title}
-                        </CardTitle>
-                        {result.channel.handle ? (
-                          <CardDescription>
-                            {result.channel.handle}
-                          </CardDescription>
-                        ) : null}
-                      </div>
-                    </div>
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                      {channelUrl ? (
-                        <Button
-                          asChild
-                          variant="outline"
-                          size="sm"
-                          className="w-full sm:w-auto"
-                        >
-                          <a href={channelUrl} target="_blank" rel="noreferrer">
-                            View on YouTube
-                          </a>
-                        </Button>
-                      ) : null}
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="w-full sm:w-auto"
-                        onClick={handleCopyShareLink}
-                      >
-                        Copy share link
-                      </Button>
-                    </div>
-                  </div>
-                  <Separator />
-                  <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
-                    <span>
-                      {result.startDate} → {result.endDate}
-                    </span>
-                    <span className="hidden sm:inline">•</span>
-                    <span>
-                      {resultRange === "lifetime"
-                        ? "Lifetime"
-                        : `${result.lookbackDays} days`}
-                    </span>
-                    <span className="hidden sm:inline">•</span>
-                    <span>{result.timezone}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : null}
-          </div>
-
-          <div className="order-2 sm:order-3">
-            {showSkeletons ? (
-              <Card>
-                <CardContent className="space-y-4 pt-6">
-                  <Skeleton className="h-5 w-36" />
-                  <Skeleton className="h-48 w-full" />
-                  <Skeleton className="h-4 w-40" />
-                </CardContent>
-              </Card>
-            ) : result ? (
-              <Heatmap
-                startDate={result.startDate}
-                endDate={result.endDate}
-                days={result.days}
-              />
-            ) : null}
-          </div>
-
-          <div className="order-3 sm:order-2">
-            {showSkeletons ? (
-              <div className="grid gap-4 md:grid-cols-3">
-                {Array.from({ length: 3 }).map((_, index) => (
-                  <Skeleton key={`stat-skel-${index}`} className="h-28 w-full" />
-                ))}
-              </div>
-            ) : result ? (
-              <StatsCards stats={result.stats} />
-            ) : null}
-          </div>
-        </section>
+        <HomeResults
+          result={result}
+          loading={loading}
+          resultRange={resultRange}
+          channelUrl={channelUrl}
+          onCopyShareLink={handleCopyShareLink}
+        />
       ) : null}
     </AppShell>
   );
