@@ -374,7 +374,7 @@ export default function HomeClient() {
   return (
     <AppShell footerChannelUrl={channelUrl ?? undefined}>
       <PageHeader
-        title="Density"
+        title="density.report"
         caption={
           <a
             href="https://design-prism.com"
