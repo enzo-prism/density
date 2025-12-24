@@ -1,28 +1,40 @@
-# density
+# YouTube Posting Frequency Tracker
 
-A new repository for the density project.
+A lightweight MVP that maps a channel's posting cadence over the last 365 days.
+Paste a YouTube channel handle or channel URL and get a calendar heatmap plus
+streak stats.
 
-## What is this
+## YouTube API setup
 
-This repo is currently a blank slate. Use this section to describe the product, the problem it solves, and the intended users.
+1. Open the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create or select a project.
+3. Enable **YouTube Data API v3** for the project.
+4. Create an API key in **APIs & Services → Credentials**.
+5. (Recommended) Restrict the key to YouTube Data API v3.
 
-## Getting started
+## Environment variables
 
-Add instructions here once the project has code, such as how to install dependencies, run the app, and execute tests.
+```bash
+cp .env.example .env.local
+```
 
-## Project structure
+Set your API key:
 
-Document the top-level folders and their purposes as they are added.
+```bash
+YOUTUBE_API_KEY=your_api_key_here
+```
 
-## Development
+## Run locally
 
-- Add environment setup steps.
-- Describe local workflows (build, run, test, lint, format).
+```bash
+npm install
+npm run dev
+```
 
-## Contributing
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Open a PR with a clear description of the change and any test coverage. More detailed guidelines can be added later.
+## Notes
 
-## License
-
-Add a license file and update this section when the licensing decision is made.
+- Only public uploads are counted.
+- The app never exposes your API key to the client; all YouTube requests stay on
+  the server.
