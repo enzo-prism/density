@@ -1,4 +1,11 @@
 import type { AnalyzeResponse } from "@/lib/types";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 type Stats = AnalyzeResponse["stats"];
 
@@ -9,15 +16,19 @@ type StatsCardsProps = {
 function StatCard(props: { label: string; value: string; hint?: string }) {
   const { label, value, hint } = props;
   return (
-    <div className="rounded-2xl border border-slate-200/80 bg-white/80 p-4 shadow-sm backdrop-blur">
-      <div className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 text-3xl font-semibold text-slate-900">{value}</div>
-      {hint ? (
-        <div className="mt-1 text-xs text-slate-500">{hint}</div>
-      ) : null}
-    </div>
+    <Card className="gap-3">
+      <CardHeader className="pb-0">
+        <CardDescription className="text-xs font-semibold uppercase tracking-[0.2em]">
+          {label}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <CardTitle className="text-3xl">{value}</CardTitle>
+        {hint ? (
+          <CardDescription className="mt-1 text-xs">{hint}</CardDescription>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

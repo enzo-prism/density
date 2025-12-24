@@ -8,6 +8,7 @@ import { computeStreakStats } from "@/lib/streaks";
 import {
   ChannelNotFoundError,
   YouTubeApiError,
+  YouTubeTimeoutError,
   fetchUploadCounts,
   parseChannelInput,
   resolveChannel,
@@ -15,10 +16,58 @@ import {
 import type { AnalyzeErrorResponse, AnalyzeResponse } from "@/lib/types";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
+const TOTAL_TIMEOUT_MS = 10 * 1000;
 const responseCache = new Map<
   string,
   { expiresAt: number; data: AnalyzeResponse }
 >();
+const inFlightRequests = new Map<string, Promise<AnalyzeResponse>>();
+const RATE_LIMIT_MAX = 30;
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const rateLimitMap = new Map<
+  string,
+  { count: number; resetAt: number }
+>();
+
+function getClientIp(request: Request): string {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const first = forwardedFor.split(",")[0]?.trim();
+    if (first) {
+      return first;
+    }
+  }
+  const realIp = request.headers.get("x-real-ip");
+  if (realIp) {
+    return realIp;
+  }
+  const cfConnectingIp = request.headers.get("cf-connecting-ip");
+  if (cfConnectingIp) {
+    return cfConnectingIp;
+  }
+  return "unknown";
+}
+
+function checkRateLimit(request: Request) {
+  const ip = getClientIp(request);
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  if (!entry || entry.resetAt <= now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX) {
+    return {
+      allowed: false,
+      retryAfterMs: Math.max(0, entry.resetAt - now),
+    };
+  }
+
+  entry.count += 1;
+  return { allowed: true };
+}
 
 function jsonError(status: number, code: string, message: string) {
   const payload: AnalyzeErrorResponse = { error: { code, message } };
@@ -26,7 +75,19 @@ function jsonError(status: number, code: string, message: string) {
 }
 
 export async function POST(request: Request) {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let controller: AbortController | null = null;
+
   try {
+    const rateLimit = checkRateLimit(request);
+    if (!rateLimit.allowed) {
+      return jsonError(
+        429,
+        "rate_limited",
+        "Too many requests. Please wait a minute and try again."
+      );
+    }
+
     const body = (await request.json()) as {
       channel?: string;
       timezone?: string;
@@ -66,58 +127,106 @@ export async function POST(request: Request) {
       return jsonError(400, "invalid_channel", parsed.message);
     }
 
-    const resolved = await resolveChannel(parsed.data, apiKey);
+    controller = new AbortController();
+    const signal = controller.signal;
+    const deadlineMs = Date.now() + TOTAL_TIMEOUT_MS;
+    timeoutId = setTimeout(() => controller?.abort(), TOTAL_TIMEOUT_MS);
+
+    const resolved = await resolveChannel(parsed.data, apiKey, signal);
     const cacheKey = `${resolved.channel.id}:${timezone}:${lookbackDays}`;
     const cached = responseCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       return NextResponse.json(cached.data);
     }
 
-    const { startDate, endDate, startDayIndex, endDayIndex } =
-      getDateRangeInTimeZone(timezone, lookbackDays);
+    const existing = inFlightRequests.get(cacheKey);
+    if (existing) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      const response = await existing;
+      return NextResponse.json(response);
+    }
 
-    const days = await fetchUploadCounts({
-      playlistId: resolved.uploadsPlaylistId,
-      timeZone: timezone,
-      startDayIndex,
-      endDayIndex,
-      apiKey,
-    });
+    const analysisPromise = (async () => {
+      const { startDate, endDate, startDayIndex, endDayIndex } =
+        getDateRangeInTimeZone(timezone, lookbackDays);
 
-    const stats = computeStreakStats(days, endDate);
+      const days = await fetchUploadCounts({
+        playlistId: resolved.uploadsPlaylistId,
+        timeZone: timezone,
+        startDayIndex,
+        endDayIndex,
+        apiKey,
+        signal,
+        deadlineMs,
+      });
 
-    const response: AnalyzeResponse = {
-      channel: resolved.channel,
-      timezone,
-      lookbackDays,
-      startDate,
-      endDate,
-      days,
-      stats,
-    };
+      const stats = computeStreakStats(days, endDate);
 
-    responseCache.set(cacheKey, {
-      expiresAt: Date.now() + CACHE_TTL_MS,
-      data: response,
-    });
+      const response: AnalyzeResponse = {
+        channel: resolved.channel,
+        timezone,
+        lookbackDays,
+        startDate,
+        endDate,
+        days,
+        stats,
+      };
 
-    return NextResponse.json(response);
+      responseCache.set(cacheKey, {
+        expiresAt: Date.now() + CACHE_TTL_MS,
+        data: response,
+      });
+
+      return response;
+    })();
+
+    inFlightRequests.set(cacheKey, analysisPromise);
+
+    try {
+      const response = await analysisPromise;
+      return NextResponse.json(response);
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      inFlightRequests.delete(cacheKey);
+    }
   } catch (error) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     if (error instanceof ChannelNotFoundError) {
       return jsonError(404, "channel_not_found", error.message);
+    }
+
+    if (error instanceof YouTubeTimeoutError) {
+      return jsonError(
+        504,
+        "temporary_failure",
+        "Temporary failure. Please try again."
+      );
     }
 
     if (error instanceof YouTubeApiError) {
       const isQuota = error.status === 403 || error.status === 429;
       return jsonError(
-        502,
-        "youtube_api_error",
+        503,
+        isQuota ? "quota_exceeded" : "try_again",
         isQuota
-          ? "YouTube API request was rejected (quota or access). Try again later."
-          : `YouTube API request failed: ${error.message}`
+          ? "Quota exceeded. Please try again later."
+          : "Try again. YouTube API request failed."
       );
     }
 
-    return jsonError(500, "unknown_error", "Unexpected server error.");
+    return jsonError(
+      500,
+      "temporary_failure",
+      "Temporary failure. Please try again."
+    );
   }
 }

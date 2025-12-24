@@ -24,6 +24,8 @@ export type ChannelParseResult =
 
 export class ChannelNotFoundError extends Error {}
 
+export class YouTubeTimeoutError extends Error {}
+
 export class YouTubeApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -71,26 +73,53 @@ export function parseChannelInput(input: string): ChannelParseResult {
     };
   }
 
-  const handleUrlMatch = trimmed.match(
-    /^https:\/\/www\.youtube\.com\/@([A-Za-z0-9._-]+)\/?$/
-  );
-  if (handleUrlMatch) {
+  const handleMatch = trimmed.match(/^@([A-Za-z0-9._-]+)(?:[/?#].*)?$/);
+  if (handleMatch) {
     return {
       ok: true,
-      data: { kind: "handle", value: handleUrlMatch[1] },
+      data: { kind: "handle", value: handleMatch[1] },
     };
   }
 
-  const handleMatch = trimmed.match(/^@([A-Za-z0-9._-]+)$/);
-  if (handleMatch) {
-    return { ok: true, data: { kind: "handle", value: handleMatch[1] } };
-  }
+  const withScheme = (() => {
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed;
+    }
+    if (
+      trimmed.startsWith("www.youtube.com/") ||
+      trimmed.startsWith("youtube.com/") ||
+      trimmed.startsWith("m.youtube.com/")
+    ) {
+      return `https://${trimmed}`;
+    }
+    return null;
+  })();
 
-  const channelIdMatch = trimmed.match(
-    /^https:\/\/www\.youtube\.com\/channel\/(UC[a-zA-Z0-9_-]{22})\/?$/
-  );
-  if (channelIdMatch) {
-    return { ok: true, data: { kind: "id", value: channelIdMatch[1] } };
+  if (withScheme) {
+    try {
+      const url = new URL(withScheme);
+      const host = url.hostname.toLowerCase();
+      if (host === "youtube.com" || host === "www.youtube.com" || host === "m.youtube.com") {
+        const handlePathMatch = url.pathname.match(
+          /^\/@([A-Za-z0-9._-]+)(?:\/|$)/
+        );
+        if (handlePathMatch) {
+          return {
+            ok: true,
+            data: { kind: "handle", value: handlePathMatch[1] },
+          };
+        }
+
+        const channelIdMatch = url.pathname.match(
+          /^\/channel\/(UC[a-zA-Z0-9_-]{22})(?:\/|$)/
+        );
+        if (channelIdMatch) {
+          return { ok: true, data: { kind: "id", value: channelIdMatch[1] } };
+        }
+      }
+    } catch {
+      // fall through to error below
+    }
   }
 
   return {
@@ -100,16 +129,61 @@ export function parseChannelInput(input: string): ChannelParseResult {
   };
 }
 
+const YOUTUBE_REQUEST_TIMEOUT_MS = 6_000;
+
+function combineSignals(signals: AbortSignal[]): AbortSignal {
+  if (signals.length === 1) {
+    return signals[0];
+  }
+  const anySignal = (
+    AbortSignal as typeof AbortSignal & {
+      any?: (signals: AbortSignal[]) => AbortSignal;
+    }
+  ).any;
+  if (anySignal) {
+    return anySignal(signals);
+  }
+  const controller = new AbortController();
+  for (const signal of signals) {
+    if (signal.aborted) {
+      controller.abort();
+      break;
+    }
+    signal.addEventListener("abort", () => controller.abort(), { once: true });
+  }
+  return controller.signal;
+}
+
 async function youtubeGet<T>(
   endpoint: string,
   params: Record<string, string>,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal
 ): Promise<T> {
   const url = new URL(`${YOUTUBE_API_BASE}/${endpoint}`);
   const search = new URLSearchParams({ ...params, key: apiKey });
   url.search = search.toString();
 
-  const response = await fetch(url.toString(), { method: "GET" });
+  const timeoutController = new AbortController();
+  const timeoutId = setTimeout(
+    () => timeoutController.abort(),
+    YOUTUBE_REQUEST_TIMEOUT_MS
+  );
+  const fetchSignal = signal
+    ? combineSignals([signal, timeoutController.signal])
+    : timeoutController.signal;
+
+  let response: Response;
+  try {
+    response = await fetch(url.toString(), { method: "GET", signal: fetchSignal });
+  } catch (error) {
+    if (fetchSignal.aborted) {
+      throw new YouTubeTimeoutError("YouTube API request timed out.");
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
   if (!response.ok) {
     let message = "YouTube API request failed.";
     try {
@@ -127,7 +201,8 @@ async function youtubeGet<T>(
 
 export async function resolveChannel(
   lookup: ChannelLookup,
-  apiKey: string
+  apiKey: string,
+  signal?: AbortSignal
 ): Promise<ResolvedChannel> {
   const params: Record<string, string> = {
     part: "snippet,contentDetails",
@@ -138,7 +213,12 @@ export async function resolveChannel(
     params.forHandle = lookup.value;
   }
 
-  const data = await youtubeGet<ChannelListResponse>("channels", params, apiKey);
+  const data = await youtubeGet<ChannelListResponse>(
+    "channels",
+    params,
+    apiKey,
+    signal
+  );
   const item = data.items?.[0];
 
   if (!item?.id) {
@@ -179,14 +259,27 @@ export async function fetchUploadCounts(options: {
   startDayIndex: number;
   endDayIndex: number;
   apiKey: string;
+  signal?: AbortSignal;
+  deadlineMs?: number;
 }): Promise<Record<string, number>> {
-  const { playlistId, timeZone, startDayIndex, endDayIndex, apiKey } = options;
+  const {
+    playlistId,
+    timeZone,
+    startDayIndex,
+    endDayIndex,
+    apiKey,
+    signal,
+    deadlineMs,
+  } = options;
   const counts: Record<string, number> = {};
 
   let pageToken: string | undefined;
   let shouldContinue = true;
 
   while (shouldContinue) {
+    if (deadlineMs && Date.now() > deadlineMs) {
+      throw new YouTubeTimeoutError("Total processing time exceeded.");
+    }
     const params: Record<string, string> = {
       part: "contentDetails",
       playlistId,
@@ -199,7 +292,8 @@ export async function fetchUploadCounts(options: {
     const data = await youtubeGet<PlaylistItemsResponse>(
       "playlistItems",
       params,
-      apiKey
+      apiKey,
+      signal
     );
 
     let oldestDayIndex = Number.POSITIVE_INFINITY;

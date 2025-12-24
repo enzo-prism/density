@@ -1,21 +1,20 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Space_Grotesk } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space",
-  subsets: ["latin"],
-});
-
-const jetBrainsMono = JetBrains_Mono({
-  variable: "--font-code",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "YouTube Posting Frequency Tracker",
-  description:
-    "Track how often a YouTube channel posts with a 365-day heatmap and streak stats.",
+  title: "Density",
+  description: "Posting frequency insights with heatmaps and streak stats.",
+  openGraph: {
+    title: "Density",
+    description: "Posting frequency insights with heatmaps and streak stats.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -25,9 +24,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${spaceGrotesk.variable} ${jetBrainsMono.variable} antialiased`}
-      >
+      <body className={`${inter.variable} antialiased`}>
         {children}
       </body>
     </html>

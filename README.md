@@ -1,10 +1,10 @@
-# YouTube Posting Frequency Tracker
+# Density
 
 A lightweight MVP that maps a channel's posting cadence over the last 365 days.
-Paste a YouTube channel handle or channel URL and get a calendar heatmap plus
-streak stats.
+Posting frequency tracker for YouTube channels that turns uploads into a
+calendar heatmap and streak stats.
 
-## YouTube API setup
+## API setup
 
 1. Open the [Google Cloud Console](https://console.cloud.google.com/).
 2. Create or select a project.
