@@ -378,7 +378,7 @@ export default function HomeClient() {
         className="motion-safe:animate-[fade-up_0.6s_ease-out]"
         style={{ animationDelay: "80ms" }}
       >
-        <CardContent>
+        <CardContent className="px-4 sm:px-6">
           <form
             onSubmit={(event) => {
               event.preventDefault();
@@ -397,7 +397,7 @@ export default function HomeClient() {
                 placeholder="https://www.youtube.com/@handle or @handle"
                 className="h-11"
               />
-              <div className="flex gap-2 overflow-x-auto pb-1 pr-1 sm:flex-wrap sm:overflow-visible">
+              <div className="flex flex-wrap gap-2">
                 {examples.map((example) => (
                   <Button
                     key={example.value}
@@ -405,7 +405,7 @@ export default function HomeClient() {
                     variant="outline"
                     size="sm"
                     onClick={() => setChannelInput(example.value)}
-                    className="rounded-full text-xs shrink-0"
+                    className="rounded-full text-xs"
                   >
                     {example.label}
                   </Button>
