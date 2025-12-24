@@ -369,7 +369,7 @@ export default function HomeClient() {
             rel="noreferrer"
             className="transition-colors hover:text-foreground"
           >
-            developed by prism in silicon valley
+            engineered by prism in silicon valley
           </a>
         }
       />
