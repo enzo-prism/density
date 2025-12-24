@@ -392,7 +392,7 @@ export default function HomeClient() {
                     variant="outline"
                     size="sm"
                     onClick={() => setChannelInput(example.value)}
-                    className="rounded-full text-xs opacity-60 transition-opacity hover:opacity-100 focus-visible:opacity-100"
+                    className="rounded-full text-xs opacity-[0.24] transition-opacity hover:opacity-100 focus-visible:opacity-100"
                   >
                     {example.label}
                   </Button>
