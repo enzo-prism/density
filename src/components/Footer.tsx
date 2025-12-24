@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import ThemeToggle from "@/components/ThemeToggle";
 
 type FooterProps = {
   className?: string;
@@ -22,7 +25,7 @@ export default function Footer({ className, channelUrl }: FooterProps) {
             </a>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-4 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:gap-4">
           <Link href="/privacy" className="hover:text-foreground">
             Privacy
           </Link>
@@ -37,6 +40,7 @@ export default function Footer({ className, channelUrl }: FooterProps) {
           >
             YouTube Terms
           </a>
+          <ThemeToggle />
         </div>
       </div>
     </footer>
