@@ -38,7 +38,7 @@ export default function PageHeader({
         </p>
       ) : null}
       {caption ? (
-        <div className="text-[11px] font-medium tracking-[0.16em] text-muted-foreground/80">
+        <div className="font-text text-[11px] font-medium tracking-[0.16em] text-muted-foreground/80">
           {caption}
         </div>
       ) : null}
