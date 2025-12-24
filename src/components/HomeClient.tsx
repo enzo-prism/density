@@ -32,16 +32,20 @@ import type { AnalyzeErrorResponse, AnalyzeResponse } from "@/lib/types";
 
 const examples = [
   {
-    label: "Veritasium",
-    value: "https://www.youtube.com/@veritasium",
+    label: "Prism",
+    value: "https://www.youtube.com/@the_design_prism",
   },
   {
-    label: "MKBHD",
-    value: "@mkbhd",
+    label: "Joe Rogan",
+    value: "https://www.youtube.com/@joerogan",
   },
   {
-    label: "Channel ID",
-    value: "https://www.youtube.com/channel/UCX6OQ3DkcsbYNE6H8uQQuVA",
+    label: "Alex Hormozi",
+    value: "https://www.youtube.com/@AlexHormozi",
+  },
+  {
+    label: "My First Million",
+    value: "https://www.youtube.com/@MyFirstMillionPod",
   },
 ];
 const privacyKey = "density_privacy_ack";
