@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { Check, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import Heatmap from "@/components/Heatmap";
@@ -11,26 +12,49 @@ import StatsCards from "@/components/StatsCards";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AnalyzeErrorResponse, AnalyzeResponse } from "@/lib/types";
 
 const examples = [
-  "https://www.youtube.com/@veritasium",
-  "@mkbhd",
-  "https://www.youtube.com/channel/UCX6OQ3DkcsbYNE6H8uQQuVA",
+  {
+    label: "Veritasium",
+    value: "https://www.youtube.com/@veritasium",
+  },
+  {
+    label: "MKBHD",
+    value: "@mkbhd",
+  },
+  {
+    label: "Channel ID",
+    value: "https://www.youtube.com/channel/UCX6OQ3DkcsbYNE6H8uQQuVA",
+  },
 ];
 const privacyKey = "density_privacy_ack";
+const suggestedTimezones = [
+  "UTC",
+  "America/Los_Angeles",
+  "America/New_York",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Tokyo",
+  "Asia/Singapore",
+  "Australia/Sydney",
+];
 
 function getInitials(title: string) {
   const parts = title.trim().split(/\s+/).filter(Boolean);
@@ -51,6 +75,8 @@ export default function HomeClient() {
 
   const [channelInput, setChannelInput] = useState("");
   const [timezone, setTimezone] = useState("UTC");
+  const [timezones, setTimezones] = useState(suggestedTimezones);
+  const [timezoneOpen, setTimezoneOpen] = useState(false);
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -66,6 +92,26 @@ export default function HomeClient() {
       }
     }
   }, [queryTimezone]);
+
+  useEffect(() => {
+    if (typeof Intl === "undefined") {
+      return;
+    }
+    const supportedValuesOf = (Intl as typeof Intl & {
+      supportedValuesOf?: (type: "timeZone") => string[];
+    }).supportedValuesOf;
+    if (!supportedValuesOf) {
+      return;
+    }
+    try {
+      const values = supportedValuesOf("timeZone");
+      if (Array.isArray(values) && values.length > 0) {
+        setTimezones(values);
+      }
+    } catch {
+      // Ignore failures and keep fallback list.
+    }
+  }, []);
 
   useEffect(() => {
     try {
@@ -180,6 +226,16 @@ export default function HomeClient() {
   const showResults = Boolean(result) || loading;
   const showSkeletons = loading;
 
+  const timezoneOptions = timezones.includes(timezone)
+    ? timezones
+    : [timezone, ...timezones];
+  const suggestedOptions = Array.from(
+    new Set([timezone, ...suggestedTimezones])
+  ).filter((zone) => timezoneOptions.includes(zone));
+  const remainingOptions = timezoneOptions.filter(
+    (zone) => !suggestedOptions.includes(zone)
+  );
+
   const handleCopyShareLink = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -191,29 +247,19 @@ export default function HomeClient() {
 
   return (
     <AppShell footerChannelUrl={channelUrl ?? undefined}>
-      <PageHeader
-        title="Density"
-        subtitle="Posting frequency tracker for YouTube channels. Paste a channel link or handle to map every posting day over the last year, then spot streaks and gaps instantly."
-      />
+      <PageHeader title="Density" />
 
       <Card
         className="motion-safe:animate-[fade-up_0.6s_ease-out]"
         style={{ animationDelay: "80ms" }}
       >
-        <CardHeader>
-          <CardTitle className="text-lg">Analyze a channel</CardTitle>
-          <CardDescription>
-            Enter a channel handle or ID and choose the timezone for local
-            dates.
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           <form
             onSubmit={(event) => {
               event.preventDefault();
               handleAnalyze();
             }}
-            className="grid gap-6 md:grid-cols-[1.3fr_0.7fr]"
+            className="grid gap-5 sm:gap-6 md:grid-cols-[1.3fr_0.7fr]"
           >
             <div className="space-y-3">
               <Label htmlFor="channel">
@@ -226,17 +272,17 @@ export default function HomeClient() {
                 placeholder="https://www.youtube.com/@handle or @handle"
                 className="h-11"
               />
-              <div className="flex flex-wrap gap-2">
+              <div className="flex gap-2 overflow-x-auto pb-1 pr-1 sm:flex-wrap sm:overflow-visible">
                 {examples.map((example) => (
                   <Button
-                    key={example}
+                    key={example.value}
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setChannelInput(example)}
-                    className="rounded-full text-xs"
+                    onClick={() => setChannelInput(example.value)}
+                    className="rounded-full text-xs shrink-0"
                   >
-                    {example}
+                    {example.label}
                   </Button>
                 ))}
               </div>
@@ -244,13 +290,72 @@ export default function HomeClient() {
 
             <div className="space-y-3">
               <Label htmlFor="timezone">Timezone</Label>
-              <Input
-                id="timezone"
-                value={timezone}
-                onChange={(event) => setTimezone(event.target.value)}
-                placeholder="America/Los_Angeles"
-                className="h-11"
-              />
+              <Popover open={timezoneOpen} onOpenChange={setTimezoneOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    id="timezone"
+                    type="button"
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={timezoneOpen}
+                    className="h-11 w-full justify-between font-normal"
+                  >
+                    <span className="line-clamp-1 text-left">
+                      {timezone || "Select timezone"}
+                    </span>
+                    <ChevronsUpDown className="h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0">
+                  <Command>
+                    <CommandInput placeholder="Search timezone..." />
+                    <CommandList>
+                      <CommandEmpty>No timezone found.</CommandEmpty>
+                      <CommandGroup heading="Suggested">
+                        {suggestedOptions.map((zone) => (
+                          <CommandItem
+                            key={`tz-suggested-${zone}`}
+                            value={zone}
+                            onSelect={() => {
+                              setTimezone(zone);
+                              setTimezoneOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={`mr-2 h-4 w-4 ${
+                                timezone === zone ? "opacity-100" : "opacity-0"
+                              }`}
+                            />
+                            {zone}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                      {remainingOptions.length > 0 ? <CommandSeparator /> : null}
+                      {remainingOptions.length > 0 ? (
+                        <CommandGroup heading="All timezones">
+                          {remainingOptions.map((zone) => (
+                            <CommandItem
+                              key={`tz-${zone}`}
+                              value={zone}
+                              onSelect={() => {
+                                setTimezone(zone);
+                                setTimezoneOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={`mr-2 h-4 w-4 ${
+                                  timezone === zone ? "opacity-100" : "opacity-0"
+                                }`}
+                              />
+                              {zone}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      ) : null}
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <Button
                 type="submit"
                 size="lg"
@@ -282,9 +387,6 @@ export default function HomeClient() {
                   </Link>
                 </Label>
               </div>
-              <p className="text-xs text-muted-foreground">
-                We use your local timezone by default. Edit if needed.
-              </p>
             </div>
           </form>
         </CardContent>
@@ -305,17 +407,17 @@ export default function HomeClient() {
           {showSkeletons ? (
             <Card>
               <CardContent className="space-y-4 pt-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-center gap-4">
-                    <Skeleton className="h-14 w-14 rounded-lg" />
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <Skeleton className="h-12 w-12 rounded-lg sm:h-14 sm:w-14" />
                     <div className="space-y-2">
                       <Skeleton className="h-5 w-48" />
                       <Skeleton className="h-4 w-32" />
                     </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Skeleton className="h-9 w-32" />
-                    <Skeleton className="h-9 w-36" />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Skeleton className="h-9 w-full sm:w-32" />
+                    <Skeleton className="h-9 w-full sm:w-36" />
                   </div>
                 </div>
                 <Separator />
@@ -325,9 +427,9 @@ export default function HomeClient() {
           ) : result ? (
             <Card>
               <CardContent className="space-y-4 pt-6">
-                <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar className="h-14 w-14">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <Avatar className="h-12 w-12 sm:h-14 sm:w-14">
                       <AvatarImage
                         src={result.channel.thumbnailUrl}
                         alt={`${result.channel.title} thumbnail`}
@@ -337,7 +439,7 @@ export default function HomeClient() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <CardTitle className="text-xl">
+                      <CardTitle className="text-xl font-display">
                         {result.channel.title}
                       </CardTitle>
                       {result.channel.handle ? (
@@ -347,23 +449,33 @@ export default function HomeClient() {
                       ) : null}
                     </div>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                     {channelUrl ? (
-                      <Button asChild variant="outline" size="sm">
+                      <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
                         <a href={channelUrl} target="_blank" rel="noreferrer">
                           View on YouTube
                         </a>
                       </Button>
                     ) : null}
-                    <Button variant="secondary" size="sm" onClick={handleCopyShareLink}>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      onClick={handleCopyShareLink}
+                    >
                       Copy share link
                     </Button>
                   </div>
                 </div>
                 <Separator />
-                <div className="text-sm text-muted-foreground">
-                  {result.startDate} → {result.endDate} · {result.lookbackDays}{" "}
-                  days · {result.timezone}
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+                  <span>
+                    {result.startDate} → {result.endDate}
+                  </span>
+                  <span className="hidden sm:inline">•</span>
+                  <span>{result.lookbackDays} days</span>
+                  <span className="hidden sm:inline">•</span>
+                  <span>{result.timezone}</span>
                 </div>
               </CardContent>
             </Card>

@@ -1,7 +1,9 @@
 import AppShell from "@/components/AppShell";
 import PageHeader from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 export default function TermsPage() {
   return (
@@ -10,6 +12,10 @@ export default function TermsPage() {
         title="Terms"
         subtitle="By using Density, you agree to be bound by YouTube&apos;s Terms of Service."
       />
+
+      <Button asChild variant="outline" size="sm" className="w-fit">
+        <Link href="/">Back to home</Link>
+      </Button>
 
       <Card>
         <CardContent className="space-y-6 pt-6 text-sm text-muted-foreground">

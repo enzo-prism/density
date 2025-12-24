@@ -1,13 +1,29 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import localFont from "next/font/local";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const sfText = localFont({
+  variable: "--font-sf-text",
+  display: "swap",
+  src: [
+    { path: "../../font/SF-Pro-Text-Regular.otf", weight: "400", style: "normal" },
+    { path: "../../font/SF-Pro-Text-RegularItalic.otf", weight: "400", style: "italic" },
+    { path: "../../font/SF-Pro-Text-Medium.otf", weight: "500", style: "normal" },
+    { path: "../../font/SF-Pro-Text-Semibold.otf", weight: "600", style: "normal" },
+  ],
+});
+
+const sfDisplay = localFont({
+  variable: "--font-sf-display",
+  display: "swap",
+  src: [
+    { path: "../../font/SF-Pro-Display-Medium.otf", weight: "500", style: "normal" },
+    { path: "../../font/SF-Pro-Display-Semibold.otf", weight: "600", style: "normal" },
+    { path: "../../font/SF-Pro-Display-Bold.otf", weight: "700", style: "normal" },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +43,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} antialiased`}>
+      <body className={`${sfText.variable} ${sfDisplay.variable} antialiased`}>
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           <TooltipProvider delayDuration={150}>
             {children}

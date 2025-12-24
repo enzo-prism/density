@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { dateToDayIndex, listDatesInRange } from "@/lib/dates";
 import {
   Card,
@@ -20,7 +21,7 @@ function getWeekdayIndex(date: string): number {
 }
 
 const heatmapCellVariants = cva(
-  "h-3.5 w-3.5 rounded-sm border border-border transition-colors",
+  "h-4 w-4 rounded-sm border border-border transition-colors sm:h-3.5 sm:w-3.5",
   {
     variants: {
       intensity: {
@@ -56,6 +57,7 @@ type HeatmapProps = {
 };
 
 export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const dates = listDatesInRange(startDate, endDate);
   const leadingEmpty = getWeekdayIndex(startDate);
   const totalCells = leadingEmpty + dates.length;
@@ -67,16 +69,17 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
   ];
 
   const startIndex = dateToDayIndex(startDate);
+  const selectedCount = selectedDate ? days[selectedDate] ?? 0 : 0;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-base">Posting heatmap</CardTitle>
-        <CardDescription>Hover a day for exact counts.</CardDescription>
+        <CardDescription>Hover or tap a day for exact counts.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-[auto_1fr] gap-4">
-          <div className="grid grid-rows-7 gap-2 text-[11px] text-muted-foreground">
+          <div className="grid grid-rows-7 gap-1.5 text-[10px] text-muted-foreground sm:gap-2 sm:text-[11px]">
             {dayLabels.map((label, index) => (
               <div key={label} className={index % 2 === 0 ? "" : "opacity-0"}>
                 {label}
@@ -84,13 +87,13 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
             ))}
           </div>
           <div className="overflow-x-auto pb-2">
-            <div className="grid w-max grid-flow-col grid-rows-7 gap-2">
+            <div className="grid w-max grid-flow-col grid-rows-7 gap-1.5 sm:gap-2">
               {cells.map((date, index) => {
                 if (!date) {
                   return (
                     <div
                       key={`empty-${startIndex}-${index}`}
-                      className="h-3.5 w-3.5 rounded-sm bg-transparent"
+                      className="h-4 w-4 rounded-sm bg-transparent sm:h-3.5 sm:w-3.5"
                     />
                   );
                 }
@@ -103,8 +106,14 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
                         role="img"
                         aria-label={label}
                         className={cn(
-                          heatmapCellVariants({ intensity: getIntensity(count) })
+                          heatmapCellVariants({ intensity: getIntensity(count) }),
+                          "cursor-pointer"
                         )}
+                        onClick={() =>
+                          setSelectedDate((current) =>
+                            current === date ? null : date
+                          )
+                        }
                       />
                     </TooltipTrigger>
                     <TooltipContent>{label}</TooltipContent>
@@ -114,6 +123,16 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
             </div>
           </div>
         </div>
+        {selectedDate ? (
+          <div className="text-xs text-muted-foreground">
+            Selected: {selectedDate} • {selectedCount}{" "}
+            {selectedCount === 1 ? "post" : "posts"}
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground sm:hidden">
+            Tap a day for exact counts.
+          </div>
+        )}
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Less</span>
           <div className="flex items-center gap-1">
@@ -122,13 +141,16 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
                 key={`legend-${count}`}
                 className={cn(
                   heatmapCellVariants({ intensity: getIntensity(count) }),
-                  "h-3 w-3"
+                  "h-3 w-3 sm:h-3 sm:w-3"
                 )}
               />
             ))}
           </div>
           <span>More</span>
         </div>
+        <p className="text-[11px] text-muted-foreground sm:hidden">
+          Swipe to explore the full year.
+        </p>
       </CardContent>
     </Card>
   );

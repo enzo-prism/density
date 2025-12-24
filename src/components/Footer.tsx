@@ -8,7 +8,7 @@ type FooterProps = {
 export default function Footer({ className, channelUrl }: FooterProps) {
   return (
     <footer className={`py-6 text-xs text-muted-foreground ${className ?? ""}`}>
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-6 md:flex-row md:items-center md:justify-between">
+      <div className="flex w-full flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div className="flex flex-wrap items-center gap-4">
           <span>Only public uploads are counted.</span>
           {channelUrl ? (

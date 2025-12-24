@@ -1,7 +1,9 @@
 import AppShell from "@/components/AppShell";
 import PageHeader from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import Link from "next/link";
 
 export default function PrivacyPage() {
   return (
@@ -10,6 +12,10 @@ export default function PrivacyPage() {
         title="Privacy Policy"
         subtitle="This policy explains what information Density accesses, how it is used, and what is stored."
       />
+
+      <Button asChild variant="outline" size="sm" className="w-fit">
+        <Link href="/">Back to home</Link>
+      </Button>
 
       <Card>
         <CardContent className="space-y-6 pt-6 text-sm text-muted-foreground">

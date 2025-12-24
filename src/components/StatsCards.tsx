@@ -23,7 +23,7 @@ function StatCard(props: { label: string; value: string; hint?: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent className="pt-0">
-        <CardTitle className="text-3xl">{value}</CardTitle>
+        <CardTitle className="text-3xl font-display">{value}</CardTitle>
         {hint ? (
           <CardDescription className="mt-1 text-xs">{hint}</CardDescription>
         ) : null}
@@ -34,7 +34,7 @@ function StatCard(props: { label: string; value: string; hint?: string }) {
 
 export default function StatsCards({ stats }: StatsCardsProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
       <StatCard
         label="Total posts"
         value={stats.totalPosts.toLocaleString()}

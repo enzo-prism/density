@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import Footer from "@/components/Footer";
+import QuoteTicker from "@/components/QuoteTicker";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
@@ -24,16 +25,21 @@ export default function AppShell({
   className,
 }: AppShellProps) {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex min-h-screen flex-col bg-background text-foreground">
+      <div className="sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
+        <div className={cn("mx-auto w-full", sizeClasses[size])}>
+          <QuoteTicker />
+        </div>
+      </div>
       <div
         className={cn(
-          "mx-auto flex min-h-screen w-full flex-col px-6 py-12 md:py-16",
+          "mx-auto flex w-full flex-1 flex-col px-4 py-8 sm:px-6 sm:py-10 md:py-12 lg:py-16",
           sizeClasses[size],
           className
         )}
       >
-        <div className="flex-1 space-y-10">{children}</div>
-        <Separator className="my-8" />
+        <div className="flex-1 space-y-8 sm:space-y-10">{children}</div>
+        <Separator className="my-6 sm:my-8" />
         <Footer channelUrl={footerChannelUrl} />
       </div>
     </div>
