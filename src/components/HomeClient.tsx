@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { Check, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Calendar, Check, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import Heatmap from "@/components/Heatmap";
@@ -561,8 +561,11 @@ export default function HomeClient() {
                 disabled={
                   loading || channelInput.trim().length === 0 || !agreedToPrivacy
                 }
-                className="w-full uppercase tracking-[0.2em]"
+                className="w-full gap-3 uppercase tracking-[0.18em] text-sm sm:text-base h-12"
               >
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-foreground ring-1 ring-border">
+                  <Calendar className="h-5 w-5" aria-hidden="true" />
+                </span>
                 {loading ? "Analyzing..." : "Analyze"}
               </Button>
               <div className="flex items-start gap-2">

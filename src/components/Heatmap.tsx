@@ -26,9 +26,9 @@ const heatmapCellVariants = cva(
     variants: {
       intensity: {
         none: "bg-muted",
-        low: "bg-muted-foreground/30",
-        mid: "bg-muted-foreground/60",
-        high: "bg-foreground",
+        low: "bg-emerald-200 dark:bg-emerald-900/60",
+        mid: "bg-emerald-400 dark:bg-emerald-700",
+        high: "bg-emerald-600 dark:bg-emerald-500",
       },
     },
     defaultVariants: {
