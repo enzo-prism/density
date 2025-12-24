@@ -60,6 +60,10 @@ const examples = [
     label: "My First Million",
     value: "https://www.youtube.com/@MyFirstMillionPod",
   },
+  {
+    label: "This Week in Startups",
+    value: "https://www.youtube.com/@startups",
+  },
 ];
 const privacyKey = "density_privacy_ack";
 const suggestedTimezones = [
