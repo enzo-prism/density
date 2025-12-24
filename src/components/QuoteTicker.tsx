@@ -289,7 +289,7 @@ export default function QuoteTicker({ className }: QuoteTickerProps) {
         </p>
         <span
           className={cn(
-            "hidden text-xs italic transition-[opacity,transform,filter] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:inline",
+            "text-xs italic transition-[opacity,transform,filter] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none self-end sm:self-auto sm:ml-auto sm:text-right",
             "will-change-[opacity,transform,filter] motion-reduce:transform-none",
             isVisible
               ? "opacity-100 translate-y-0 blur-0"
