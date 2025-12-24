@@ -26,7 +26,7 @@ export default function AppShell({
 }: AppShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <div className="sticky top-0 z-20 pt-[env(safe-area-inset-top)]">
+      <div className="pt-[env(safe-area-inset-top)]">
         <div className={cn("mx-auto w-full", sizeClasses[size])}>
           <QuoteTicker />
         </div>
