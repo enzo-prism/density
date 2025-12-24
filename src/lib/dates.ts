@@ -54,6 +54,23 @@ export function getDateRangeInTimeZone(
   return { startDate, endDate, startDayIndex, endDayIndex };
 }
 
+export function getDateRangeFromStartDate(
+  timeZone: string,
+  startDate: string
+): {
+  startDate: string;
+  endDate: string;
+  startDayIndex: number;
+  endDayIndex: number;
+  lookbackDays: number;
+} {
+  const endDate = formatDateInTimeZone(new Date(), timeZone);
+  const startDayIndex = dateToDayIndex(startDate);
+  const endDayIndex = dateToDayIndex(endDate);
+  const lookbackDays = Math.max(1, endDayIndex - startDayIndex + 1);
+  return { startDate, endDate, startDayIndex, endDayIndex, lookbackDays };
+}
+
 export function listDatesInRange(startDate: string, endDate: string): string[] {
   const startIndex = dateToDayIndex(startDate);
   const endIndex = dateToDayIndex(endDate);

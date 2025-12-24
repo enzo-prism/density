@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   clampLookbackDays,
+  formatDateInTimeZone,
+  getDateRangeFromStartDate,
   getDateRangeInTimeZone,
   isValidTimeZone,
 } from "@/lib/dates";
@@ -28,6 +30,7 @@ const rateLimitMap = new Map<
   string,
   { count: number; resetAt: number }
 >();
+class ChannelCreationDateError extends Error {}
 
 function getClientIp(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
@@ -92,14 +95,19 @@ export async function POST(request: Request) {
       channel?: string;
       timezone?: string;
       lookbackDays?: number;
+      range?: string;
     };
 
     const channelInput = typeof body.channel === "string" ? body.channel : "";
     const timezone =
       typeof body.timezone === "string" ? body.timezone.trim() : "";
-    const lookbackDays = clampLookbackDays(
-      typeof body.lookbackDays === "number" ? body.lookbackDays : undefined
-    );
+    const range = body.range === "lifetime" ? "lifetime" : "days";
+    const lookbackDays =
+      range === "lifetime"
+        ? undefined
+        : clampLookbackDays(
+            typeof body.lookbackDays === "number" ? body.lookbackDays : undefined
+          );
 
     if (!channelInput.trim()) {
       return jsonError(400, "invalid_channel", "Channel input is required.");
@@ -133,7 +141,9 @@ export async function POST(request: Request) {
     timeoutId = setTimeout(() => controller?.abort(), TOTAL_TIMEOUT_MS);
 
     const resolved = await resolveChannel(parsed.data, apiKey, signal);
-    const cacheKey = `${resolved.channel.id}:${timezone}:${lookbackDays}`;
+    const cacheKey = `${resolved.channel.id}:${timezone}:${
+      range === "lifetime" ? "lifetime" : lookbackDays
+    }`;
     const cached = responseCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       if (timeoutId) {
@@ -152,8 +162,42 @@ export async function POST(request: Request) {
     }
 
     const analysisPromise = (async () => {
-      const { startDate, endDate, startDayIndex, endDayIndex } =
-        getDateRangeInTimeZone(timezone, lookbackDays);
+      let startDate: string;
+      let endDate: string;
+      let startDayIndex: number;
+      let endDayIndex: number;
+      let resolvedLookbackDays: number;
+
+      if (range === "lifetime") {
+        const createdAt = resolved.createdAt;
+        if (!createdAt) {
+          throw new ChannelCreationDateError(
+            "Channel creation date not available."
+          );
+        }
+        const createdAtDate = new Date(createdAt);
+        if (Number.isNaN(createdAtDate.getTime())) {
+          throw new ChannelCreationDateError(
+            "Channel creation date not available."
+          );
+        }
+        const createdDate = formatDateInTimeZone(createdAtDate, timezone);
+        ({
+          startDate,
+          endDate,
+          startDayIndex,
+          endDayIndex,
+          lookbackDays: resolvedLookbackDays,
+        } = getDateRangeFromStartDate(timezone, createdDate));
+      } else {
+        ({
+          startDate,
+          endDate,
+          startDayIndex,
+          endDayIndex,
+        } = getDateRangeInTimeZone(timezone, lookbackDays ?? 365));
+        resolvedLookbackDays = lookbackDays ?? 365;
+      }
 
       const days = await fetchUploadCounts({
         playlistId: resolved.uploadsPlaylistId,
@@ -170,7 +214,7 @@ export async function POST(request: Request) {
       const response: AnalyzeResponse = {
         channel: resolved.channel,
         timezone,
-        lookbackDays,
+        lookbackDays: resolvedLookbackDays,
         startDate,
         endDate,
         days,
@@ -202,6 +246,14 @@ export async function POST(request: Request) {
     }
     if (error instanceof ChannelNotFoundError) {
       return jsonError(404, "channel_not_found", error.message);
+    }
+
+    if (error instanceof ChannelCreationDateError) {
+      return jsonError(
+        502,
+        "lifetime_unavailable",
+        "Unable to determine the channel creation date."
+      );
     }
 
     if (error instanceof YouTubeTimeoutError) {

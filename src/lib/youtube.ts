@@ -16,6 +16,7 @@ export type ChannelInfo = {
 export type ResolvedChannel = {
   channel: ChannelInfo;
   uploadsPlaylistId: string;
+  createdAt?: string;
 };
 
 export type ChannelParseResult =
@@ -40,6 +41,7 @@ type ChannelListResponse = {
     snippet?: {
       title?: string;
       customUrl?: string;
+      publishedAt?: string;
       thumbnails?: {
         high?: { url?: string };
         medium?: { url?: string };
@@ -241,6 +243,7 @@ export async function resolveChannel(
   }
 
   const handle = snippet?.customUrl;
+  const createdAt = snippet?.publishedAt;
 
   return {
     channel: {
@@ -250,6 +253,7 @@ export async function resolveChannel(
       handle: handle?.startsWith("@") ? handle : undefined,
     },
     uploadsPlaylistId,
+    createdAt,
   };
 }
 

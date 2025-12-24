@@ -149,7 +149,7 @@ export default function Heatmap({ startDate, endDate, days }: HeatmapProps) {
           <span>More</span>
         </div>
         <p className="text-[11px] text-muted-foreground sm:hidden">
-          Swipe to explore the full year.
+          Swipe to explore the full range.
         </p>
       </CardContent>
     </Card>

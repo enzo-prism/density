@@ -106,6 +106,7 @@ export default function HomeClient() {
   const queryChannel = searchParams.get("c");
   const queryTimezone = searchParams.get("tz");
   const queryDays = searchParams.get("days");
+  const queryRange = searchParams.get("range");
 
   const [channelInput, setChannelInput] = useState("");
   const [timezone, setTimezone] = useState("UTC");
@@ -115,6 +116,7 @@ export default function HomeClient() {
   const [rangeSelection, setRangeSelection] = useState("365");
   const [customDaysInput, setCustomDaysInput] = useState("365");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
+  const [resultRange, setResultRange] = useState<"days" | "lifetime">("days");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
@@ -131,6 +133,10 @@ export default function HomeClient() {
   }, [queryTimezone]);
 
   useEffect(() => {
+    if (queryRange === "lifetime" || queryDays === "lifetime") {
+      setRangeSelection("lifetime");
+      return;
+    }
     if (!queryDays) {
       return;
     }
@@ -143,7 +149,7 @@ export default function HomeClient() {
     setCustomDaysInput(String(clamped));
     const isPreset = rangePresets.some((preset) => preset.value === clamped);
     setRangeSelection(isPreset ? String(clamped) : "custom");
-  }, [queryDays]);
+  }, [queryDays, queryRange]);
 
   useEffect(() => {
     if (typeof Intl === "undefined") {
@@ -192,10 +198,13 @@ export default function HomeClient() {
       channelValue: string,
       timezoneValue: string,
       updateUrl = true,
-      lookbackOverride?: number
+      lookbackOverride?: number,
+      rangeOverride?: "days" | "lifetime"
     ) => {
       const trimmedChannel = channelValue.trim();
       const trimmedTimezone = timezoneValue.trim();
+      const resolvedRange =
+        rangeOverride ?? (rangeSelection === "lifetime" ? "lifetime" : "days");
       const sanitizedLookback = clampLookbackDays(
         lookbackOverride ?? lookbackDays
       );
@@ -214,8 +223,12 @@ export default function HomeClient() {
         const params = new URLSearchParams({
           c: trimmedChannel,
           tz: trimmedTimezone,
-          days: String(sanitizedLookback),
         });
+        if (resolvedRange === "lifetime") {
+          params.set("range", "lifetime");
+        } else {
+          params.set("days", String(sanitizedLookback));
+        }
         router.replace(`/?${params.toString()}`);
       }
       setLoading(true);
@@ -231,7 +244,9 @@ export default function HomeClient() {
           body: JSON.stringify({
             channel: trimmedChannel,
             timezone: trimmedTimezone,
-            lookbackDays: sanitizedLookback,
+            ...(resolvedRange === "lifetime"
+              ? { range: "lifetime" }
+              : { lookbackDays: sanitizedLookback }),
           }),
         });
 
@@ -249,14 +264,20 @@ export default function HomeClient() {
 
         setResult(data as AnalyzeResponse);
         setTimezone((data as AnalyzeResponse).timezone);
-        setLookbackDays((data as AnalyzeResponse).lookbackDays);
-        setCustomDaysInput(String((data as AnalyzeResponse).lookbackDays));
-        const selection = rangePresets.some(
-          (preset) => preset.value === (data as AnalyzeResponse).lookbackDays
-        )
-          ? String((data as AnalyzeResponse).lookbackDays)
-          : "custom";
-        setRangeSelection(selection);
+        if (resolvedRange === "lifetime") {
+          setRangeSelection("lifetime");
+          setResultRange("lifetime");
+        } else {
+          setResultRange("days");
+          setLookbackDays((data as AnalyzeResponse).lookbackDays);
+          setCustomDaysInput(String((data as AnalyzeResponse).lookbackDays));
+          const selection = rangePresets.some(
+            (preset) => preset.value === (data as AnalyzeResponse).lookbackDays
+          )
+            ? String((data as AnalyzeResponse).lookbackDays)
+            : "custom";
+          setRangeSelection(selection);
+        }
       } catch {
         setError("Failed to reach the analyzer. Please try again.");
         setResult(null);
@@ -265,12 +286,13 @@ export default function HomeClient() {
         setLoading(false);
       }
     },
-    [agreedToPrivacy, loading, lookbackDays, router]
+    [agreedToPrivacy, loading, lookbackDays, rangeSelection, router]
   );
 
   const handleAnalyze = useCallback(async () => {
-    await analyze(channelInput, timezone, true);
-  }, [analyze, channelInput, timezone]);
+    const rangeOverride = rangeSelection === "lifetime" ? "lifetime" : "days";
+    await analyze(channelInput, timezone, true, undefined, rangeOverride);
+  }, [analyze, channelInput, timezone, rangeSelection]);
 
   useEffect(() => {
     if (autoRunRef.current) {
@@ -285,6 +307,13 @@ export default function HomeClient() {
     autoRunRef.current = true;
     setChannelInput(queryChannel);
     setTimezone(queryTimezone);
+    const isLifetimeQuery =
+      queryRange === "lifetime" || queryDays === "lifetime";
+    if (isLifetimeQuery) {
+      setRangeSelection("lifetime");
+      void analyze(queryChannel, queryTimezone, false, undefined, "lifetime");
+      return;
+    }
     const parsedDays = queryDays ? Number(queryDays) : NaN;
     let clampedDays = lookbackDays;
     if (Number.isFinite(parsedDays)) {
@@ -296,11 +325,12 @@ export default function HomeClient() {
         : "custom";
       setRangeSelection(selection);
     }
-    void analyze(queryChannel, queryTimezone, false, clampedDays);
+    void analyze(queryChannel, queryTimezone, false, clampedDays, "days");
   }, [
     queryChannel,
     queryTimezone,
     queryDays,
+    queryRange,
     privacyReady,
     agreedToPrivacy,
     analyze,
@@ -328,6 +358,9 @@ export default function HomeClient() {
     setRangeSelection(value);
     if (value === "custom") {
       setCustomDaysInput(String(lookbackDays));
+      return;
+    }
+    if (value === "lifetime") {
       return;
     }
     const parsed = Number(value);
@@ -532,6 +565,7 @@ export default function HomeClient() {
                             {preset.label}
                           </SelectItem>
                         ))}
+                        <SelectItem value="lifetime">Lifetime</SelectItem>
                         <SelectItem value="custom">Custom range</SelectItem>
                       </SelectContent>
                     </Select>
@@ -681,7 +715,11 @@ export default function HomeClient() {
                       {result.startDate} → {result.endDate}
                     </span>
                     <span className="hidden sm:inline">•</span>
-                    <span>{result.lookbackDays} days</span>
+                    <span>
+                      {resultRange === "lifetime"
+                        ? "Lifetime"
+                        : `${result.lookbackDays} days`}
+                    </span>
                     <span className="hidden sm:inline">•</span>
                     <span>{result.timezone}</span>
                   </div>
