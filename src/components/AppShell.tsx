@@ -1,12 +1,18 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import Footer from "@/components/Footer";
 import { cn } from "@/lib/utils";
 
 const QuoteTicker = dynamic(() => import("@/components/QuoteTicker"), {
   ssr: false,
+  loading: () => (
+    <div
+      className="min-h-[52px] border-b border-border bg-card/95 dark:bg-background sm:min-h-[44px]"
+      aria-hidden="true"
+    />
+  ),
 });
 
 type AppShellProps = {
@@ -27,49 +33,11 @@ export default function AppShell({
   size = "default",
   className,
 }: AppShellProps) {
-  const [showTicker, setShowTicker] = useState(false);
-
-  // Defer the animated ticker until idle time to keep first paint lightweight.
-  useEffect(() => {
-    const requestIdle = (
-      window as Window & {
-        requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
-      }
-    ).requestIdleCallback;
-    const cancelIdle = (
-      window as Window & { cancelIdleCallback?: (id: number) => void }
-    ).cancelIdleCallback;
-    let idleId: number | null = null;
-    let timeoutId: number | null = null;
-
-    if (requestIdle) {
-      idleId = requestIdle(() => setShowTicker(true), { timeout: 1500 });
-    } else {
-      timeoutId = window.setTimeout(() => setShowTicker(true), 1200);
-    }
-
-    return () => {
-      if (idleId !== null && cancelIdle) {
-        cancelIdle(idleId);
-      }
-      if (timeoutId !== null) {
-        window.clearTimeout(timeoutId);
-      }
-    };
-  }, []);
-
   return (
     <div className="flex min-h-screen flex-col bg-background text-foreground">
       <div className="pt-[env(safe-area-inset-top)]">
         <div className={cn("mx-auto w-full", sizeClasses[size])}>
-          {showTicker ? (
-            <QuoteTicker />
-          ) : (
-            <div
-              className="min-h-[52px] border-b border-border bg-card/95 dark:bg-background sm:min-h-[44px]"
-              aria-hidden="true"
-            />
-          )}
+          <QuoteTicker />
         </div>
       </div>
       <div
