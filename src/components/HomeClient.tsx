@@ -94,6 +94,13 @@ export default function HomeClient() {
   const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [privacyReady, setPrivacyReady] = useState(false);
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [sample] = useState(() => {
+    if (examples.length === 0) {
+      return null;
+    }
+    const index = Math.floor(Math.random() * examples.length);
+    return examples[index] ?? null;
+  });
   const autoRunRef = useRef(false);
 
   useEffect(() => {
@@ -385,20 +392,20 @@ export default function HomeClient() {
                 placeholder="URL or @handle"
                 className="h-12 text-base"
               />
-              <div className="flex flex-wrap gap-2">
-                {examples.map((example) => (
+              {sample ? (
+                <div className="flex items-center gap-3 pt-2 text-xs text-muted-foreground">
+                  <span className="uppercase tracking-[0.2em]">Sample:</span>
                   <Button
-                    key={example.value}
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setChannelInput(example.value)}
+                    onClick={() => setChannelInput(sample.value)}
                     className="rounded-full text-xs opacity-[0.24] transition-opacity hover:opacity-100 focus-visible:opacity-100"
                   >
-                    {example.label}
+                    {sample.label}
                   </Button>
-                ))}
-              </div>
+                </div>
+              ) : null}
             </div>
 
             <div className="space-y-3">
