@@ -41,3 +41,5 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Performance overlay uses public video statistics via `videos.list` (no OAuth).
 - Like/comment counts may be missing or zero depending on video settings.
 - Large channels can take longer to analyze due to extra API calls.
+- Density Rank is a custom score based on public data and is not affiliated with YouTube.
+- Performance stats for Density Rank may be temporarily unavailable due to quota/timeouts.

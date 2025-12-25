@@ -13,9 +13,11 @@ import {
   YouTubeTimeoutError,
   fetchUploadCounts,
   fetchVideoPerformance,
+  fetchVideoStats,
   parseChannelInput,
   resolveChannel,
 } from "@/lib/youtube";
+import { computeDensityRank } from "@/lib/rank";
 import type {
   AnalyzeErrorResponse,
   AnalyzeResponse,
@@ -224,11 +226,17 @@ export async function POST(request: Request) {
         resolvedLookbackDays = lookbackDays ?? 365;
       }
 
-      const { counts: days, uploads } = await fetchUploadCounts({
+      const rankWindowDays = Math.max(30, Math.min(90, resolvedLookbackDays));
+      const rankStartDayIndex = endDayIndex - rankWindowDays + 1;
+
+      const { counts: days, uploads, rankedUploads } = await fetchUploadCounts({
         playlistId: resolved.uploadsPlaylistId,
         timeZone: timezone,
         startDayIndex,
         endDayIndex,
+        rankStartDayIndex,
+        rankEndDayIndex: endDayIndex,
+        rankCap: 500,
         apiKey,
         signal,
         deadlineMs,
@@ -236,10 +244,11 @@ export async function POST(request: Request) {
 
       const stats = computeStreakStats(days, endDate);
       let performance: AnalyzeResponse["performance"];
+      let performanceMap: Record<string, { views: number; likes: number; comments: number; title: string; durationSeconds: number }> | null = null;
 
       try {
         const videoIds = Array.from(new Set(uploads.map((item) => item.videoId)));
-        const performanceMap = await fetchVideoPerformance(
+        performanceMap = await fetchVideoPerformance(
           videoIds,
           apiKey,
           signal,
@@ -314,6 +323,49 @@ export async function POST(request: Request) {
         performance = { status: "unavailable", message };
       }
 
+      let statsById: Map<string, { views: number; likes: number; comments: number }> | undefined;
+      if (performanceMap) {
+        const map = new Map<string, { views: number; likes: number; comments: number }>();
+        for (const upload of rankedUploads) {
+          const perf = performanceMap[upload.videoId];
+          if (!perf) {
+            continue;
+          }
+          map.set(upload.videoId, {
+            views: perf.views,
+            likes: perf.likes,
+            comments: perf.comments,
+          });
+        }
+        if (map.size > 0) {
+          statsById = map;
+        }
+      }
+
+      if (!statsById) {
+        try {
+          const rankVideoIds = Array.from(
+            new Set(rankedUploads.map((item) => item.videoId))
+          );
+          statsById = await fetchVideoStats(
+            rankVideoIds,
+            apiKey,
+            signal,
+            deadlineMs
+          );
+        } catch {
+          statsById = undefined;
+        }
+      }
+
+      const rank = computeDensityRank({
+        rankWindowDays,
+        endDate,
+        dayCounts: days,
+        rankedUploads,
+        statsById,
+      });
+
       const response: AnalyzeResponse = {
         channel: resolved.channel,
         timezone,
@@ -323,10 +375,13 @@ export async function POST(request: Request) {
         days,
         stats,
         performance,
+        rank,
       };
 
       const cacheTtlMs =
-        performance.status === "ok" ? CACHE_TTL_MS : 60 * 1000;
+        performance.status === "ok" && rank.status === "ok"
+          ? CACHE_TTL_MS
+          : 60 * 1000;
       responseCache.set(cacheKey, {
         expiresAt: Date.now() + cacheTtlMs,
         data: response,

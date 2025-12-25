@@ -30,6 +30,13 @@ export type Upload = {
   dayIndex: number;
 };
 
+export type RankedUpload = {
+  videoId: string;
+  publishedAt: string;
+  localDate: string;
+  dayIndex: number;
+};
+
 export type VideoPerformance = {
   title: string;
   views: number;
@@ -322,21 +329,32 @@ export async function fetchUploadCounts(options: {
   timeZone: string;
   startDayIndex: number;
   endDayIndex: number;
+  rankStartDayIndex?: number;
+  rankEndDayIndex?: number;
+  rankCap?: number;
   apiKey: string;
   signal?: AbortSignal;
   deadlineMs?: number;
-}): Promise<{ counts: Record<string, number>; uploads: Upload[] }> {
+}): Promise<{ counts: Record<string, number>; uploads: Upload[]; rankedUploads: RankedUpload[] }> {
   const {
     playlistId,
     timeZone,
     startDayIndex,
     endDayIndex,
+    rankStartDayIndex,
+    rankEndDayIndex,
+    rankCap = 500,
     apiKey,
     signal,
     deadlineMs,
   } = options;
   const counts: Record<string, number> = {};
   const uploads: Upload[] = [];
+  const rankedUploads: RankedUpload[] = [];
+  const scanUntilDayIndex =
+    rankStartDayIndex !== undefined
+      ? Math.min(startDayIndex, rankStartDayIndex)
+      : startDayIndex;
 
   let pageToken: string | undefined;
   let shouldContinue = true;
@@ -390,6 +408,19 @@ export async function fetchUploadCounts(options: {
         localDate: dateString,
         dayIndex,
       });
+      if (
+        rankStartDayIndex !== undefined &&
+        dayIndex >= rankStartDayIndex &&
+        dayIndex <= (rankEndDayIndex ?? endDayIndex) &&
+        rankedUploads.length < rankCap
+      ) {
+        rankedUploads.push({
+          videoId,
+          publishedAt,
+          localDate: dateString,
+          dayIndex,
+        });
+      }
     }
 
     pageToken = data.nextPageToken;
@@ -397,13 +428,73 @@ export async function fetchUploadCounts(options: {
     if (!pageToken) {
       shouldContinue = false;
     } else if (oldestDayIndex !== Number.POSITIVE_INFINITY) {
-      if (oldestDayIndex < startDayIndex) {
+      if (oldestDayIndex < scanUntilDayIndex) {
         shouldContinue = false;
       }
     }
   }
 
-  return { counts, uploads };
+  return { counts, uploads, rankedUploads };
+}
+
+export async function fetchVideoStats(
+  videoIds: string[],
+  apiKey: string,
+  signal?: AbortSignal,
+  deadlineMs?: number
+): Promise<Map<string, { views: number; likes: number; comments: number }>> {
+  const result = new Map<string, { views: number; likes: number; comments: number }>();
+  if (videoIds.length === 0) {
+    return result;
+  }
+  const chunkSize = 50;
+  const chunks: string[][] = [];
+  for (let i = 0; i < videoIds.length; i += chunkSize) {
+    chunks.push(videoIds.slice(i, i + chunkSize));
+  }
+  let index = 0;
+  const concurrency = Math.min(4, chunks.length);
+
+  const worker = async () => {
+    while (index < chunks.length) {
+      const currentIndex = index;
+      index += 1;
+      if (deadlineMs && Date.now() > deadlineMs) {
+        throw new YouTubeTimeoutError("Total processing time exceeded.");
+      }
+      const chunk = chunks[currentIndex] ?? [];
+      if (chunk.length === 0) {
+        continue;
+      }
+      const data = await youtubeGet<VideosListResponse>(
+        "videos",
+        {
+          part: "statistics",
+          id: chunk.join(","),
+          maxResults: "50",
+          fields: "items(id,statistics(viewCount,likeCount,commentCount))",
+        },
+        apiKey,
+        signal
+      );
+      for (const item of data.items ?? []) {
+        if (!item?.id) {
+          continue;
+        }
+        const views = Number(item.statistics?.viewCount ?? 0);
+        const likes = Number(item.statistics?.likeCount ?? 0);
+        const comments = Number(item.statistics?.commentCount ?? 0);
+        result.set(item.id, {
+          views: Number.isFinite(views) ? views : 0,
+          likes: Number.isFinite(likes) ? likes : 0,
+          comments: Number.isFinite(comments) ? comments : 0,
+        });
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return result;
 }
 
 export async function fetchVideoPerformance(

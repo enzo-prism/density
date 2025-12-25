@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Heatmap from "@/components/Heatmap";
 import type { HeatmapMetric } from "@/components/Heatmap";
 import StatsCards from "@/components/StatsCards";
+import DensityRankCard from "@/components/DensityRankCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -287,7 +288,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-3">
+      <div className="order-2">
         {showSkeletons ? (
           <div className="grid gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
@@ -299,7 +300,21 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-2">
+      <div className="order-3">
+        {showSkeletons ? (
+          <Card>
+            <CardContent className="space-y-4 pt-6">
+              <Skeleton className="h-6 w-40" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-32 w-full" />
+            </CardContent>
+          </Card>
+        ) : result ? (
+          <DensityRankCard rank={result.rank} />
+        ) : null}
+      </div>
+
+      <div className="order-4">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -323,7 +338,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-4">
+      <div className="order-5">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -343,7 +358,7 @@ export default function HomeResults({
       </div>
 
       {!showSkeletons && result ? (
-        <div ref={performanceRef} className="order-5 space-y-4">
+        <div ref={performanceRef} className="order-6 space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
