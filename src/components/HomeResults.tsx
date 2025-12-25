@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Heatmap from "@/components/Heatmap";
-import type { HeatmapMetric } from "@/components/Heatmap";
 import StatsCards from "@/components/StatsCards";
 import DensityRankCard from "@/components/DensityRankCard";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -91,7 +90,6 @@ export default function HomeResults({
   onCopyShareLink,
 }: HomeResultsProps) {
   const showSkeletons = loading;
-  const [metric, setMetric] = useState<HeatmapMetric>("posts");
   const [performanceReady, setPerformanceReady] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -101,7 +99,6 @@ export default function HomeResults({
   const performanceRef = useRef<HTMLDivElement | null>(null);
   const performance = result?.performance;
   const performanceOk = performance?.status === "ok";
-  const performanceDays = performanceOk ? performance.days : undefined;
   const performanceVideos =
     performanceOk && performance?.status === "ok" ? performance.videos : null;
   const dayBreakdown = useMemo(() => {
@@ -136,8 +133,6 @@ export default function HomeResults({
       performance.totals.likes
     )} • Comments ${formatter.format(performance.totals.comments)}`;
   }, [performanceOk, performance]);
-
-  const heatmapMetric = performanceOk ? metric : "posts";
 
   useEffect(() => {
     if (!result) {
@@ -329,10 +324,7 @@ export default function HomeResults({
               startDate={result.startDate}
               endDate={result.endDate}
               days={result.days}
-              performanceDays={performanceDays}
               dayBreakdown={dayBreakdown}
-              selectedMetric={heatmapMetric}
-              onMetricChange={setMetric}
             />
           </TooltipProvider>
         ) : null}

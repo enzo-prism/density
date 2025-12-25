@@ -10,7 +10,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { cva } from "class-variance-authority";
 
@@ -52,63 +51,20 @@ function getPostsIntensity(count: number) {
   return "none";
 }
 
-function getQuantile(sorted: number[], quantile: number): number {
-  if (sorted.length === 0) {
-    return 0;
-  }
-  const index = Math.floor((sorted.length - 1) * quantile);
-  return sorted[index] ?? 0;
-}
-
-function getPerformanceIntensity(value: number, thresholds: number[]) {
-  if (value <= 0) {
-    return "none";
-  }
-  const [p50, p75, p90] = thresholds;
-  if (value <= p50) {
-    return "low";
-  }
-  if (value <= p75) {
-    return "mid";
-  }
-  if (value <= p90) {
-    return "high";
-  }
-  return "peak";
-}
-
-export type HeatmapMetric = "posts" | "views" | "likes" | "comments";
-
 type HeatmapProps = {
   startDate: string;
   endDate: string;
   days: Record<string, number>;
-  performanceDays?: Record<string, { views: number; likes: number; comments: number }>;
   dayBreakdown?: Record<string, { videos: number; shorts: number }>;
-  selectedMetric?: HeatmapMetric;
-  onMetricChange?: (metric: HeatmapMetric) => void;
-};
-
-const metricLabels: Record<HeatmapMetric, string> = {
-  posts: "Posts",
-  views: "Views",
-  likes: "Likes",
-  comments: "Comments",
 };
 
 export default function Heatmap({
   startDate,
   endDate,
   days,
-  performanceDays,
   dayBreakdown,
-  selectedMetric,
-  onMetricChange,
 }: HeatmapProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [internalMetric, setInternalMetric] = useState<HeatmapMetric>("posts");
-  const isControlled = selectedMetric !== undefined;
-  const metric = performanceDays ? selectedMetric ?? internalMetric : "posts";
   const dates = listDatesInRange(startDate, endDate);
   const leadingEmpty = getWeekdayIndex(startDate);
   const totalCells = leadingEmpty + dates.length;
@@ -134,20 +90,6 @@ export default function Heatmap({
       }),
     []
   );
-  const metricThresholds = useMemo(() => {
-    if (metric === "posts" || !performanceDays) {
-      return [0, 0, 0];
-    }
-    const values = Object.values(performanceDays)
-      .map((entry) => entry[metric] ?? 0)
-      .filter((value) => value > 0)
-      .sort((a, b) => a - b);
-    return [
-      getQuantile(values, 0.5),
-      getQuantile(values, 0.75),
-      getQuantile(values, 0.9),
-    ];
-  }, [metric, performanceDays]);
 
   const selectedPostsCount = selectedDate ? days[selectedDate] ?? 0 : 0;
   const selectedBreakdown = selectedDate ? dayBreakdown?.[selectedDate] : undefined;
@@ -173,51 +115,13 @@ export default function Heatmap({
         .filter(Boolean)
         .join(", ")
     : "";
-  const selectedMetricValue =
-    selectedDate && metric !== "posts" && performanceDays
-      ? performanceDays[selectedDate]?.[metric] ?? 0
-      : selectedDate
-      ? days[selectedDate] ?? 0
-      : 0;
-
   return (
     <Card>
-      <CardHeader className="space-y-4">
+      <CardHeader className="space-y-2">
         <CardTitle className="text-base">Posting heatmap</CardTitle>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardDescription>
-            Hover or tap a day for exact counts.
-          </CardDescription>
-          <ToggleGroup
-            type="single"
-            value={metric}
-            onValueChange={(value) => {
-              if (!value) {
-                return;
-              }
-              const next = value as HeatmapMetric;
-              onMetricChange?.(next);
-              if (!isControlled) {
-                setInternalMetric(next);
-              }
-            }}
-            size="sm"
-            variant="outline"
-            className="w-full sm:w-auto"
-          >
-            {(Object.keys(metricLabels) as HeatmapMetric[]).map((key) => (
-              <ToggleGroupItem
-                key={key}
-                value={key}
-                aria-label={`Show ${metricLabels[key]} intensity`}
-                disabled={!performanceDays && key !== "posts"}
-                className="text-xs"
-              >
-                {metricLabels[key]}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
+        <CardDescription>
+          Hover or tap a day for exact counts.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-[auto_1fr] gap-4">
@@ -240,14 +144,7 @@ export default function Heatmap({
                   );
                 }
                 const postCount = days[date] ?? 0;
-                const metricValue =
-                  metric === "posts"
-                    ? postCount
-                    : performanceDays?.[date]?.[metric] ?? 0;
-                const intensity =
-                  metric === "posts"
-                    ? getPostsIntensity(postCount)
-                    : getPerformanceIntensity(metricValue, metricThresholds);
+                const intensity = getPostsIntensity(postCount);
                 const tooltipDate = tooltipDateFormatter.format(
                   new Date(`${date}T00:00:00Z`)
                 );
@@ -282,11 +179,6 @@ export default function Heatmap({
                         <div className="text-xs text-muted-foreground">
                           Posts: {formatNumber.format(postCount)}
                         </div>
-                        {metric !== "posts" ? (
-                          <div className="text-xs text-muted-foreground">
-                            {metricLabels[metric]}: {formatNumber.format(metricValue)}
-                          </div>
-                        ) : null}
                       </div>
                     </TooltipContent>
                   </Tooltip>
@@ -304,13 +196,6 @@ export default function Heatmap({
                 <> ({selectedBreakdownLabel})</>
               ) : null
             ) : null}
-            {metric !== "posts" ? (
-              <>
-                {" "}
-                • {metricLabels[metric].toLowerCase()}{" "}
-                {formatNumber.format(selectedMetricValue)}
-              </>
-            ) : null}
           </div>
         ) : (
           <div className="text-xs text-muted-foreground sm:hidden">
@@ -320,27 +205,15 @@ export default function Heatmap({
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span>Less</span>
           <div className="flex items-center gap-1">
-            {metric === "posts"
-              ? [0, 1, 2, 4].map((count) => (
-                  <span
-                    key={`legend-${count}`}
-                    className={cn(
-                      heatmapCellVariants({ intensity: getPostsIntensity(count) }),
-                      "h-3 w-3 sm:h-3 sm:w-3"
-                    )}
-                  />
-                ))
-              : (["none", "low", "mid", "high", "peak"] as const).map(
-                  (intensity) => (
-                    <span
-                      key={`legend-${intensity}`}
-                      className={cn(
-                        heatmapCellVariants({ intensity }),
-                        "h-3 w-3 sm:h-3 sm:w-3"
-                      )}
-                    />
-                  )
+            {[0, 1, 2, 4].map((count) => (
+              <span
+                key={`legend-${count}`}
+                className={cn(
+                  heatmapCellVariants({ intensity: getPostsIntensity(count) }),
+                  "h-3 w-3 sm:h-3 sm:w-3"
                 )}
+              />
+            ))}
           </div>
           <span>More</span>
         </div>
