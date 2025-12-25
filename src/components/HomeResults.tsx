@@ -1,12 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Heatmap from "@/components/Heatmap";
 import type { HeatmapMetric } from "@/components/Heatmap";
 import StatsCards from "@/components/StatsCards";
-import PerformanceScatter from "@/components/PerformanceScatter";
-import BestPostingDay from "@/components/BestPostingDay";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -19,6 +18,34 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { AnalyzeResponse } from "@/lib/types";
+
+const PerformanceScatter = dynamic(
+  () => import("@/components/PerformanceScatter"),
+  {
+    ssr: false,
+    loading: () => (
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <Skeleton className="h-5 w-44" />
+          <Skeleton className="h-56 w-full" />
+          <Skeleton className="h-4 w-40" />
+        </CardContent>
+      </Card>
+    ),
+  }
+);
+
+const BestPostingDay = dynamic(() => import("@/components/BestPostingDay"), {
+  ssr: false,
+  loading: () => (
+    <Card>
+      <CardContent className="space-y-4 pt-6">
+        <Skeleton className="h-5 w-36" />
+        <Skeleton className="h-32 w-full" />
+      </CardContent>
+    </Card>
+  ),
+});
 
 type HomeResultsProps = {
   result: AnalyzeResponse | null;
@@ -48,6 +75,8 @@ export default function HomeResults({
 }: HomeResultsProps) {
   const showSkeletons = loading;
   const [metric, setMetric] = useState<HeatmapMetric>("posts");
+  const [performanceReady, setPerformanceReady] = useState(false);
+  const performanceRef = useRef<HTMLDivElement | null>(null);
   const performance = result?.performance;
   const performanceOk = performance?.status === "ok";
   const performanceDays = performanceOk ? performance.days : undefined;
@@ -64,6 +93,31 @@ export default function HomeResults({
   }, [performanceOk, performance]);
 
   const heatmapMetric = performanceOk ? metric : "posts";
+
+  useEffect(() => {
+    if (!performanceOk || performanceReady) {
+      return;
+    }
+    const node = performanceRef.current;
+    if (!node) {
+      return;
+    }
+    if (typeof IntersectionObserver === "undefined") {
+      setPerformanceReady(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setPerformanceReady(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [performanceOk, performanceReady]);
 
   return (
     <section
@@ -192,7 +246,7 @@ export default function HomeResults({
       </div>
 
       {!showSkeletons && result ? (
-        <div className="order-4 space-y-4">
+        <div ref={performanceRef} className="order-4 space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
@@ -215,10 +269,28 @@ export default function HomeResults({
             </Alert>
           ) : null}
           {performanceOk ? (
-            <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-              <PerformanceScatter videos={performance.videos} />
-              <BestPostingDay weekdays={performance.weekdays} />
-            </div>
+            performanceReady ? (
+              <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+                <PerformanceScatter videos={performance.videos} />
+                <BestPostingDay weekdays={performance.weekdays} />
+              </div>
+            ) : (
+              <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+                <Card>
+                  <CardContent className="space-y-4 pt-6">
+                    <Skeleton className="h-5 w-44" />
+                    <Skeleton className="h-56 w-full" />
+                    <Skeleton className="h-4 w-40" />
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="space-y-4 pt-6">
+                    <Skeleton className="h-5 w-36" />
+                    <Skeleton className="h-32 w-full" />
+                  </CardContent>
+                </Card>
+              </div>
+            )
           ) : null}
         </div>
       ) : null}

@@ -8,10 +8,11 @@ import "./globals.css";
 const sfText = localFont({
   variable: "--font-sf-text",
   display: "swap",
+  preload: false,
   src: [
-    { path: "../../font/SF-Pro-Text-Regular.otf", weight: "400", style: "normal" },
-    { path: "../../font/SF-Pro-Text-Medium.otf", weight: "500", style: "normal" },
-    { path: "../../font/SF-Pro-Text-Semibold.otf", weight: "600", style: "normal" },
+    { path: "../../font/web/SF-Pro-Text-Regular.woff2", weight: "400", style: "normal" },
+    { path: "../../font/web/SF-Pro-Text-Medium.woff2", weight: "500", style: "normal" },
+    { path: "../../font/web/SF-Pro-Text-Semibold.woff2", weight: "600", style: "normal" },
   ],
 });
 
@@ -20,7 +21,7 @@ const sfDisplay = localFont({
   display: "swap",
   preload: false,
   src: [
-    { path: "../../font/SF-Pro-Display-Semibold.otf", weight: "600", style: "normal" },
+    { path: "../../font/web/SF-Pro-Display-Semibold.woff2", weight: "600", style: "normal" },
   ],
 });
 
