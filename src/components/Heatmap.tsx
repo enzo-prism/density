@@ -122,6 +122,16 @@ export default function Heatmap({
     () => new Intl.NumberFormat("en-US"),
     []
   );
+  const tooltipDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat("en-US", {
+        weekday: "short",
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      }),
+    []
+  );
   const metricThresholds = useMemo(() => {
     if (metric === "posts" || !performanceDays) {
       return [0, 0, 0];
@@ -213,15 +223,17 @@ export default function Heatmap({
                   metric === "posts"
                     ? getPostsIntensity(postCount)
                     : getPerformanceIntensity(metricValue, metricThresholds);
-                const label = `${date} • ${postCount} post${
-                  postCount === 1 ? "" : "s"
-                }`;
+                const tooltipDate = tooltipDateFormatter.format(
+                  new Date(`${date}T00:00:00Z`)
+                );
                 return (
                   <Tooltip key={date}>
                     <TooltipTrigger asChild>
                       <div
                         role="img"
-                        aria-label={label}
+                        aria-label={`${date} • ${postCount} post${
+                          postCount === 1 ? "" : "s"
+                        }`}
                         className={cn(
                           heatmapCellVariants({ intensity }),
                           "cursor-pointer"
@@ -236,7 +248,7 @@ export default function Heatmap({
                     <TooltipContent>
                       <div className="space-y-1">
                         <div className="text-xs font-medium text-foreground">
-                          {date}
+                          {tooltipDate}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           Posts: {formatNumber.format(postCount)}

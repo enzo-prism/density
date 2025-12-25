@@ -86,5 +86,5 @@ export function clampLookbackDays(value: number | undefined): number {
     return 365;
   }
   const floored = Math.floor(value as number);
-  return Math.min(3650, Math.max(30, floored));
+  return Math.min(3650, Math.max(7, floored));
 }

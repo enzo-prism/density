@@ -188,13 +188,13 @@ export default function HomeAdvancedOptions({
           {rangeSelection === "custom" ? (
             <div className="space-y-2">
               <Label htmlFor="custom-days" className="text-xs">
-                Custom days (30–3650)
+                Custom days (7–3650)
               </Label>
               <Input
                 id="custom-days"
                 type="number"
                 inputMode="numeric"
-                min={30}
+                min={7}
                 max={3650}
                 value={customDaysInput}
                 onChange={onCustomDaysChange}
