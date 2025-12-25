@@ -241,6 +241,8 @@ export async function resolveChannel(
 ): Promise<ResolvedChannel> {
   const params: Record<string, string> = {
     part: "snippet,contentDetails",
+    fields:
+      "items(id,snippet(title,customUrl,publishedAt,thumbnails(high(url),medium(url),default(url))),contentDetails(relatedPlaylists(uploads)))",
   };
   if (lookup.kind === "id") {
     params.id = lookup.value;
@@ -347,6 +349,7 @@ export async function fetchUploadCounts(options: {
       part: "contentDetails",
       playlistId,
       maxResults: "50",
+      fields: "items(contentDetails(videoId,videoPublishedAt)),nextPageToken",
     };
     if (pageToken) {
       params.pageToken = pageToken;
@@ -414,38 +417,56 @@ export async function fetchVideoPerformance(
     return result;
   }
   const chunkSize = 50;
+  const chunks: string[][] = [];
   for (let i = 0; i < videoIds.length; i += chunkSize) {
-    if (deadlineMs && Date.now() > deadlineMs) {
-      throw new YouTubeTimeoutError("Total processing time exceeded.");
-    }
-    const chunk = videoIds.slice(i, i + chunkSize);
-    const data = await youtubeGet<VideosListResponse>(
-      "videos",
-      {
-        part: "statistics,contentDetails,snippet",
-        id: chunk.join(","),
-        maxResults: "50",
-      },
-      apiKey,
-      signal
-    );
-    for (const item of data.items ?? []) {
-      if (!item?.id) {
+    chunks.push(videoIds.slice(i, i + chunkSize));
+  }
+  let index = 0;
+  const concurrency = Math.min(4, chunks.length);
+
+  const worker = async () => {
+    while (index < chunks.length) {
+      const currentIndex = index;
+      index += 1;
+      if (deadlineMs && Date.now() > deadlineMs) {
+        throw new YouTubeTimeoutError("Total processing time exceeded.");
+      }
+      const chunk = chunks[currentIndex] ?? [];
+      if (chunk.length === 0) {
         continue;
       }
-      const views = Number(item.statistics?.viewCount ?? 0);
-      const likes = Number(item.statistics?.likeCount ?? 0);
-      const comments = Number(item.statistics?.commentCount ?? 0);
-      result[item.id] = {
-        title: item.snippet?.title ?? "Untitled video",
-        views: Number.isFinite(views) ? views : 0,
-        likes: Number.isFinite(likes) ? likes : 0,
-        comments: Number.isFinite(comments) ? comments : 0,
-        durationSeconds: parseIsoDurationToSeconds(
-          item.contentDetails?.duration ?? ""
-        ),
-      };
+      const data = await youtubeGet<VideosListResponse>(
+        "videos",
+        {
+          part: "statistics,contentDetails,snippet",
+          id: chunk.join(","),
+          maxResults: "50",
+          fields:
+            "items(id,snippet(title),statistics(viewCount,likeCount,commentCount),contentDetails(duration))",
+        },
+        apiKey,
+        signal
+      );
+      for (const item of data.items ?? []) {
+        if (!item?.id) {
+          continue;
+        }
+        const views = Number(item.statistics?.viewCount ?? 0);
+        const likes = Number(item.statistics?.likeCount ?? 0);
+        const comments = Number(item.statistics?.commentCount ?? 0);
+        result[item.id] = {
+          title: item.snippet?.title ?? "Untitled video",
+          views: Number.isFinite(views) ? views : 0,
+          likes: Number.isFinite(likes) ? likes : 0,
+          comments: Number.isFinite(comments) ? comments : 0,
+          durationSeconds: parseIsoDurationToSeconds(
+            item.contentDetails?.duration ?? ""
+          ),
+        };
+      }
     }
-  }
+  };
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
   return result;
 }

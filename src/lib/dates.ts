@@ -1,13 +1,23 @@
 const MS_PER_DAY = 86_400_000;
+const formatterCache = new Map<string, Intl.DateTimeFormat>();
 
-export function formatDateInTimeZone(date: Date, timeZone: string): string {
+function getFormatter(timeZone: string) {
+  const cached = formatterCache.get(timeZone);
+  if (cached) {
+    return cached;
+  }
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
   });
-  const parts = formatter.formatToParts(date);
+  formatterCache.set(timeZone, formatter);
+  return formatter;
+}
+
+export function formatDateInTimeZone(date: Date, timeZone: string): string {
+  const parts = getFormatter(timeZone).formatToParts(date);
   const map = new Map(parts.map((part) => [part.type, part.value]));
   const year = map.get("year");
   const month = map.get("month");
