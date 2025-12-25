@@ -129,6 +129,23 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
     [data]
   );
 
+  const yAxisWidth = useMemo(() => {
+    if (data.length === 0) {
+      return isCoarsePointer ? 56 : 68;
+    }
+    const maxViews = data.reduce(
+      (currentMax, item) => Math.max(currentMax, item.views),
+      0
+    );
+    const label = formatter.format(maxViews);
+    const charWidth = isCoarsePointer ? 6.5 : 7.5;
+    const padding = isCoarsePointer ? 18 : 22;
+    const minWidth = isCoarsePointer ? 56 : 68;
+    const maxWidth = isCoarsePointer ? 88 : 104;
+    const estimated = Math.ceil(label.length * charWidth + padding);
+    return Math.min(maxWidth, Math.max(minWidth, estimated));
+  }, [data, formatter, isCoarsePointer]);
+
   const selectedVideo = useMemo(
     () => data.find((video) => video.id === selectedId) ?? null,
     [data, selectedId]
@@ -153,7 +170,7 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
       }
       const isSelected = payload.id === selectedId;
       const baseRadius = isCoarsePointer ? 5 : 4;
-      const hitRadius = isCoarsePointer ? 16 : 10;
+      const hitRadius = isCoarsePointer ? 16 : 14;
       const ringRadius = isCoarsePointer ? 9 : 7;
       const ringColor = isCoarsePointer ? "rgb(16 185 129)" : "var(--color-views)";
       const ringOpacity = isCoarsePointer ? 1 : 0.6;
@@ -254,7 +271,7 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                   tickFormatter={(value) =>
                     Number.isFinite(value) ? formatter.format(value) : ""
                   }
-                  width={isCoarsePointer ? 52 : 64}
+                  width={yAxisWidth}
                   tick={{ fontSize: isCoarsePointer ? 10 : 12 }}
                 />
                 <ZAxis
