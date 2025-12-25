@@ -148,7 +148,7 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                   return (
                     <ChartTooltipContent
                       active={active}
-                      payload={payload}
+                      payload={payload.length > 0 ? [payload[0]] : payload}
                       hideLabel
                       hideIndicator
                       formatter={() => (
