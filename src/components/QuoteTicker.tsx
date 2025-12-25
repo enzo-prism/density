@@ -461,7 +461,7 @@ export default function QuoteTicker({ className }: QuoteTickerProps) {
         className
       )}
     >
-      <CardContent className="flex min-h-[52px] flex-col gap-2 px-4 py-3 text-xs text-muted-foreground sm:min-h-[44px] sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
+      <CardContent className="flex min-h-[80px] flex-col gap-2 px-4 py-3 text-xs text-muted-foreground sm:min-h-[52px] sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
         <p
           className={cn(
             "max-w-full italic line-clamp-2 transition-[opacity,transform,filter] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:max-w-[70%] sm:line-clamp-1",
