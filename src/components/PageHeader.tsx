@@ -55,7 +55,7 @@ export default function PageHeader({
         </p>
       ) : null}
       {caption ? (
-        <div className="font-text text-xs italic text-muted-foreground">
+        <div className="font-text text-xs text-muted-foreground">
           {caption}
         </div>
       ) : null}
