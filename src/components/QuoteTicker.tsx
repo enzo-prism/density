@@ -461,13 +461,13 @@ export default function QuoteTicker({ className }: QuoteTickerProps) {
         className
       )}
     >
-      <CardContent className="flex min-h-[80px] flex-col gap-2 px-4 py-3 text-xs text-muted-foreground sm:min-h-[52px] sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
+      <CardContent className="flex min-h-[80px] flex-col gap-2 px-4 py-3 text-xs text-muted-foreground/70 sm:min-h-[52px] sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6">
         <p
           className={cn(
             "max-w-full italic line-clamp-2 transition-[opacity,transform,filter] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none sm:max-w-[70%] sm:line-clamp-1",
             "will-change-[opacity,transform,filter] motion-reduce:transform-none",
             isVisible
-              ? "opacity-100 translate-y-0 blur-0"
+              ? "opacity-80 translate-y-0 blur-0"
               : "opacity-0 -translate-y-1 blur-[1px]"
           )}
           aria-live="polite"
@@ -479,20 +479,13 @@ export default function QuoteTicker({ className }: QuoteTickerProps) {
             "text-xs italic transition-[opacity,transform,filter] duration-[650ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none self-end sm:self-auto sm:ml-auto sm:text-right",
             "will-change-[opacity,transform,filter] motion-reduce:transform-none",
             isVisible
-              ? "opacity-100 translate-y-0 blur-0"
+              ? "opacity-70 translate-y-0 blur-0"
               : "opacity-0 translate-y-1 blur-[1px]"
           )}
         >
           — {quote.author}
         </span>
       </CardContent>
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-px">
-        <div
-          key={`progress-${index}`}
-          className="h-full origin-left bg-foreground/30 quote-progress"
-          style={{ ["--quote-duration" as string]: `${DISPLAY_MS}ms` }}
-        />
-      </div>
     </Card>
   );
 }
