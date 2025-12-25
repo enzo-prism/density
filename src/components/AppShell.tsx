@@ -47,7 +47,9 @@ export default function AppShell({
           className
         )}
       >
-        <div className="flex-1 space-y-8 sm:space-y-10">{children}</div>
+        <main className="flex min-h-screen flex-1 flex-col space-y-8 sm:space-y-10">
+          {children}
+        </main>
         <div className="my-6 h-px w-full bg-border sm:my-8" />
         <Footer channelUrl={footerChannelUrl} />
       </div>
