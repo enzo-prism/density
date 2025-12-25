@@ -4,7 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { ChevronDown } from "lucide-react";
+import { Brain, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import AppShell from "@/components/AppShell";
 import PageHeader from "@/components/PageHeader";
@@ -439,7 +439,10 @@ export default function HomeClient() {
                 }
                 className="w-full h-12 rounded-full text-sm sm:text-base font-semibold tracking-wide"
               >
-                {loading ? "Analyzing..." : "Analyze"}
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Brain className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+                  {loading ? "Analyzing..." : "Analyze"}
+                </span>
               </Button>
               <div className="flex items-start gap-2">
                 <Checkbox
