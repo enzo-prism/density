@@ -5,6 +5,7 @@ import {
   useMemo,
   useState,
   useSyncExternalStore,
+  type ReactElement,
 } from "react";
 import {
   CartesianGrid,
@@ -144,7 +145,7 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
   );
 
   const renderDot = useCallback(
-    (props: unknown): JSX.Element => {
+    (props: unknown): ReactElement => {
       const { cx, cy, payload, onMouseEnter, onMouseLeave } =
         props as ScatterDotProps;
       if (!payload || !Number.isFinite(cx) || !Number.isFinite(cy)) {
