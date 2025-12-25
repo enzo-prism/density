@@ -157,6 +157,22 @@ export default function Heatmap({
     ? Math.max(0, selectedPostsCount - (selectedVideosCount + selectedShortsCount))
     : 0;
   const adjustedVideosCount = selectedVideosCount + selectedUnknownCount;
+  const selectedBreakdownLabel = selectedDate && dayBreakdown
+    ? [
+        adjustedVideosCount > 0
+          ? `${adjustedVideosCount} ${
+              adjustedVideosCount === 1 ? "video" : "videos"
+            }`
+          : null,
+        selectedShortsCount > 0
+          ? `${selectedShortsCount} ${
+              selectedShortsCount === 1 ? "short" : "shorts"
+            }`
+          : null,
+      ]
+        .filter(Boolean)
+        .join(", ")
+    : "";
   const selectedMetricValue =
     selectedDate && metric !== "posts" && performanceDays
       ? performanceDays[selectedDate]?.[metric] ?? 0
@@ -284,13 +300,9 @@ export default function Heatmap({
             Selected: {selectedDate} • {selectedPostsCount}{" "}
             {selectedPostsCount === 1 ? "post" : "posts"}
             {dayBreakdown ? (
-              <>
-                {" "}
-                • {adjustedVideosCount}{" "}
-                {adjustedVideosCount === 1 ? "video" : "videos"} •{" "}
-                {selectedShortsCount}{" "}
-                {selectedShortsCount === 1 ? "short" : "shorts"}
-              </>
+              selectedBreakdownLabel ? (
+                <> ({selectedBreakdownLabel})</>
+              ) : null
             ) : null}
             {metric !== "posts" ? (
               <>
