@@ -12,13 +12,19 @@ import {
   YouTubeApiError,
   YouTubeTimeoutError,
   fetchUploadCounts,
+  fetchVideoPerformance,
   parseChannelInput,
   resolveChannel,
 } from "@/lib/youtube";
-import type { AnalyzeErrorResponse, AnalyzeResponse } from "@/lib/types";
+import type {
+  AnalyzeErrorResponse,
+  AnalyzeResponse,
+  VideoPoint,
+  WeekdayStat,
+} from "@/lib/types";
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
-const TOTAL_TIMEOUT_MS = 10 * 1000;
+const TOTAL_TIMEOUT_MS = 20 * 1000;
 const responseCache = new Map<
   string,
   { expiresAt: number; data: AnalyzeResponse }
@@ -31,6 +37,25 @@ const rateLimitMap = new Map<
   { count: number; resetAt: number }
 >();
 class ChannelCreationDateError extends Error {}
+
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+function getWeekdayIndex(date: string): number {
+  const utcDay = new Date(`${date}T00:00:00Z`).getUTCDay();
+  return Number.isNaN(utcDay) ? 0 : utcDay;
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) {
+    return 0;
+  }
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return Math.round((sorted[mid - 1] + sorted[mid]) / 2);
+  }
+  return sorted[mid];
+}
 
 function getClientIp(request: Request): string {
   const forwardedFor = request.headers.get("x-forwarded-for");
@@ -199,7 +224,7 @@ export async function POST(request: Request) {
         resolvedLookbackDays = lookbackDays ?? 365;
       }
 
-      const days = await fetchUploadCounts({
+      const { counts: days, uploads } = await fetchUploadCounts({
         playlistId: resolved.uploadsPlaylistId,
         timeZone: timezone,
         startDayIndex,
@@ -210,6 +235,84 @@ export async function POST(request: Request) {
       });
 
       const stats = computeStreakStats(days, endDate);
+      let performance: AnalyzeResponse["performance"];
+
+      try {
+        const videoIds = Array.from(new Set(uploads.map((item) => item.videoId)));
+        const performanceMap = await fetchVideoPerformance(
+          videoIds,
+          apiKey,
+          signal,
+          deadlineMs
+        );
+        const videos: VideoPoint[] = [];
+        const performanceDays: Record<
+          string,
+          { views: number; likes: number; comments: number }
+        > = {};
+        const totals = { views: 0, likes: 0, comments: 0 };
+        const weekdayBuckets: number[][] = Array.from({ length: 7 }, () => []);
+
+        for (const upload of uploads) {
+          const perf = performanceMap[upload.videoId];
+          if (!perf) {
+            continue;
+          }
+          videos.push({
+            id: upload.videoId,
+            title: perf.title,
+            publishedAt: upload.publishedAt,
+            localDate: upload.localDate,
+            views: perf.views,
+            likes: perf.likes,
+            comments: perf.comments,
+            durationSeconds: perf.durationSeconds,
+          });
+          const dayTotals = performanceDays[upload.localDate] ?? {
+            views: 0,
+            likes: 0,
+            comments: 0,
+          };
+          dayTotals.views += perf.views;
+          dayTotals.likes += perf.likes;
+          dayTotals.comments += perf.comments;
+          performanceDays[upload.localDate] = dayTotals;
+          totals.views += perf.views;
+          totals.likes += perf.likes;
+          totals.comments += perf.comments;
+          const weekday = getWeekdayIndex(upload.localDate);
+          weekdayBuckets[weekday]?.push(perf.views);
+        }
+
+        const weekdays: WeekdayStat[] = WEEKDAY_LABELS.map((label, weekday) => {
+          const views = weekdayBuckets[weekday] ?? [];
+          return {
+            weekday,
+            label,
+            videoCount: views.length,
+            medianViews: median(views),
+          };
+        });
+
+        performance = {
+          status: "ok",
+          days: performanceDays,
+          videos,
+          weekdays,
+          totals,
+        };
+      } catch (error) {
+        let message = "Performance data is temporarily unavailable.";
+        if (error instanceof YouTubeTimeoutError) {
+          message = "Performance data request timed out. Please try again.";
+        } else if (error instanceof YouTubeApiError) {
+          const isQuota = error.status === 403 || error.status === 429;
+          message = isQuota
+            ? "Performance data unavailable due to YouTube API limits."
+            : "Performance data could not be loaded right now.";
+        }
+        performance = { status: "unavailable", message };
+      }
 
       const response: AnalyzeResponse = {
         channel: resolved.channel,
@@ -219,10 +322,13 @@ export async function POST(request: Request) {
         endDate,
         days,
         stats,
+        performance,
       };
 
+      const cacheTtlMs =
+        performance.status === "ok" ? CACHE_TTL_MS : 60 * 1000;
       responseCache.set(cacheKey, {
-        expiresAt: Date.now() + CACHE_TTL_MS,
+        expiresAt: Date.now() + cacheTtlMs,
         data: response,
       });
 

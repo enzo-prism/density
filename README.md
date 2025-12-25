@@ -38,3 +38,6 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 - Only public uploads are counted.
 - The app never exposes your API key to the client; all YouTube requests stay on
   the server.
+- Performance overlay uses public video statistics via `videos.list` (no OAuth).
+- Like/comment counts may be missing or zero depending on video settings.
+- Large channels can take longer to analyze due to extra API calls.

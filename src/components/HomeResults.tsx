@@ -1,9 +1,14 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Heatmap from "@/components/Heatmap";
+import type { HeatmapMetric } from "@/components/Heatmap";
 import StatsCards from "@/components/StatsCards";
+import PerformanceScatter from "@/components/PerformanceScatter";
+import BestPostingDay from "@/components/BestPostingDay";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -42,6 +47,23 @@ export default function HomeResults({
   onCopyShareLink,
 }: HomeResultsProps) {
   const showSkeletons = loading;
+  const [metric, setMetric] = useState<HeatmapMetric>("posts");
+  const performance = result?.performance;
+  const performanceOk = performance?.status === "ok";
+  const performanceDays = performanceOk ? performance.days : undefined;
+  const totalsSummary = useMemo(() => {
+    if (!performanceOk || !performance || performance.status !== "ok") {
+      return null;
+    }
+    const formatter = new Intl.NumberFormat("en-US");
+    return `Views ${formatter.format(
+      performance.totals.views
+    )} • Likes ${formatter.format(
+      performance.totals.likes
+    )} • Comments ${formatter.format(performance.totals.comments)}`;
+  }, [performanceOk, performance]);
+
+  const heatmapMetric = performanceOk ? metric : "posts";
 
   return (
     <section
@@ -149,6 +171,9 @@ export default function HomeResults({
               startDate={result.startDate}
               endDate={result.endDate}
               days={result.days}
+              performanceDays={performanceDays}
+              selectedMetric={heatmapMetric}
+              onMetricChange={setMetric}
             />
           </TooltipProvider>
         ) : null}
@@ -165,6 +190,38 @@ export default function HomeResults({
           <StatsCards stats={result.stats} />
         ) : null}
       </div>
+
+      {!showSkeletons && result ? (
+        <div className="order-4 space-y-4">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-foreground">
+                Performance overlay
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Views, likes, comments, and duration context for each upload.
+              </p>
+            </div>
+            {totalsSummary ? (
+              <div className="text-xs text-muted-foreground">
+                {totalsSummary}
+              </div>
+            ) : null}
+          </div>
+          {performance?.status === "unavailable" ? (
+            <Alert>
+              <AlertTitle>Performance data unavailable</AlertTitle>
+              <AlertDescription>{performance.message}</AlertDescription>
+            </Alert>
+          ) : null}
+          {performanceOk ? (
+            <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
+              <PerformanceScatter videos={performance.videos} />
+              <BestPostingDay weekdays={performance.weekdays} />
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

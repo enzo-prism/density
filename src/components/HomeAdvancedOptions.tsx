@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useMemo, useState, type ChangeEvent } from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,27 +57,27 @@ export default function HomeAdvancedOptions({
   onCustomDaysChange,
   onCustomDaysBlur,
 }: HomeAdvancedOptionsProps) {
-  const [timezones, setTimezones] = useState(suggestedTimezones);
   const [timezoneOpen, setTimezoneOpen] = useState(false);
 
-  useEffect(() => {
+  const timezones = useMemo(() => {
     if (typeof Intl === "undefined") {
-      return;
+      return suggestedTimezones;
     }
     const supportedValuesOf = (Intl as typeof Intl & {
       supportedValuesOf?: (type: "timeZone") => string[];
     }).supportedValuesOf;
     if (!supportedValuesOf) {
-      return;
+      return suggestedTimezones;
     }
     try {
       const values = supportedValuesOf("timeZone");
       if (Array.isArray(values) && values.length > 0) {
-        setTimezones(values);
+        return values;
       }
     } catch {
       // Ignore failures and keep fallback list.
     }
+    return suggestedTimezones;
   }, []);
 
   const timezoneOptions = useMemo(() => {

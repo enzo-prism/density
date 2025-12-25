@@ -23,6 +23,21 @@ export type ChannelParseResult =
   | { ok: true; data: ChannelLookup }
   | { ok: false; message: string };
 
+export type Upload = {
+  videoId: string;
+  publishedAt: string;
+  localDate: string;
+  dayIndex: number;
+};
+
+export type VideoPerformance = {
+  title: string;
+  views: number;
+  likes: number;
+  comments: number;
+  durationSeconds: number;
+};
+
 export class ChannelNotFoundError extends Error {}
 
 export class YouTubeTimeoutError extends Error {}
@@ -59,10 +74,28 @@ type ChannelListResponse = {
 type PlaylistItemsResponse = {
   items?: Array<{
     contentDetails?: {
+      videoId?: string;
       videoPublishedAt?: string;
     };
   }>;
   nextPageToken?: string;
+};
+
+type VideosListResponse = {
+  items?: Array<{
+    id?: string;
+    snippet?: {
+      title?: string;
+    };
+    statistics?: {
+      viewCount?: string;
+      likeCount?: string;
+      commentCount?: string;
+    };
+    contentDetails?: {
+      duration?: string;
+    };
+  }>;
 };
 
 export function parseChannelInput(input: string): ChannelParseResult {
@@ -257,6 +290,31 @@ export async function resolveChannel(
   };
 }
 
+export function parseIsoDurationToSeconds(duration: string): number {
+  if (!duration) {
+    return 0;
+  }
+  const match = duration.match(
+    /^P(?:(\d+)D)?T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/
+  );
+  if (!match) {
+    return 0;
+  }
+  const days = Number(match[1] ?? 0);
+  const hours = Number(match[2] ?? 0);
+  const minutes = Number(match[3] ?? 0);
+  const seconds = Number(match[4] ?? 0);
+  if (
+    Number.isNaN(days) ||
+    Number.isNaN(hours) ||
+    Number.isNaN(minutes) ||
+    Number.isNaN(seconds)
+  ) {
+    return 0;
+  }
+  return days * 86400 + hours * 3600 + minutes * 60 + seconds;
+}
+
 export async function fetchUploadCounts(options: {
   playlistId: string;
   timeZone: string;
@@ -265,7 +323,7 @@ export async function fetchUploadCounts(options: {
   apiKey: string;
   signal?: AbortSignal;
   deadlineMs?: number;
-}): Promise<Record<string, number>> {
+}): Promise<{ counts: Record<string, number>; uploads: Upload[] }> {
   const {
     playlistId,
     timeZone,
@@ -276,6 +334,7 @@ export async function fetchUploadCounts(options: {
     deadlineMs,
   } = options;
   const counts: Record<string, number> = {};
+  const uploads: Upload[] = [];
 
   let pageToken: string | undefined;
   let shouldContinue = true;
@@ -303,8 +362,10 @@ export async function fetchUploadCounts(options: {
     let oldestDayIndex = Number.POSITIVE_INFINITY;
 
     for (const item of data.items ?? []) {
-      const publishedAt = item.contentDetails?.videoPublishedAt;
-      if (!publishedAt) {
+      const contentDetails = item.contentDetails;
+      const publishedAt = contentDetails?.videoPublishedAt;
+      const videoId = contentDetails?.videoId;
+      if (!publishedAt || !videoId) {
         continue;
       }
       const publishedDate = new Date(publishedAt);
@@ -320,6 +381,12 @@ export async function fetchUploadCounts(options: {
         continue;
       }
       counts[dateString] = (counts[dateString] ?? 0) + 1;
+      uploads.push({
+        videoId,
+        publishedAt,
+        localDate: dateString,
+        dayIndex,
+      });
     }
 
     pageToken = data.nextPageToken;
@@ -333,5 +400,52 @@ export async function fetchUploadCounts(options: {
     }
   }
 
-  return counts;
+  return { counts, uploads };
+}
+
+export async function fetchVideoPerformance(
+  videoIds: string[],
+  apiKey: string,
+  signal?: AbortSignal,
+  deadlineMs?: number
+): Promise<Record<string, VideoPerformance>> {
+  const result: Record<string, VideoPerformance> = {};
+  if (videoIds.length === 0) {
+    return result;
+  }
+  const chunkSize = 50;
+  for (let i = 0; i < videoIds.length; i += chunkSize) {
+    if (deadlineMs && Date.now() > deadlineMs) {
+      throw new YouTubeTimeoutError("Total processing time exceeded.");
+    }
+    const chunk = videoIds.slice(i, i + chunkSize);
+    const data = await youtubeGet<VideosListResponse>(
+      "videos",
+      {
+        part: "statistics,contentDetails,snippet",
+        id: chunk.join(","),
+        maxResults: "50",
+      },
+      apiKey,
+      signal
+    );
+    for (const item of data.items ?? []) {
+      if (!item?.id) {
+        continue;
+      }
+      const views = Number(item.statistics?.viewCount ?? 0);
+      const likes = Number(item.statistics?.likeCount ?? 0);
+      const comments = Number(item.statistics?.commentCount ?? 0);
+      result[item.id] = {
+        title: item.snippet?.title ?? "Untitled video",
+        views: Number.isFinite(views) ? views : 0,
+        likes: Number.isFinite(likes) ? likes : 0,
+        comments: Number.isFinite(comments) ? comments : 0,
+        durationSeconds: parseIsoDurationToSeconds(
+          item.contentDetails?.duration ?? ""
+        ),
+      };
+    }
+  }
+  return result;
 }
