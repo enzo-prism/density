@@ -281,6 +281,7 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                 />
                 <ChartTooltip
                   cursor={{ strokeDasharray: "3 3" }}
+                  allowEscapeViewBox={{ x: false, y: false }}
                   content={({ active, payload }) => {
                     if (!active || !payload?.length) {
                       return null;
@@ -297,9 +298,10 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                         payload={payload.length > 0 ? [payload[0]] : payload}
                         hideLabel
                         hideIndicator
+                        className="max-w-[78vw] break-words sm:max-w-[320px]"
                         formatter={() => (
                           <div className="space-y-1">
-                            <div className="text-xs font-medium text-foreground">
+                            <div className="text-xs font-medium text-foreground line-clamp-2">
                               {item.title}
                             </div>
                             <div className="text-xs text-muted-foreground">
