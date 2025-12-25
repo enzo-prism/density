@@ -457,7 +457,7 @@ export default function QuoteTicker({ className }: QuoteTickerProps) {
   return (
     <Card
       className={cn(
-        "relative overflow-hidden rounded-none border-x-0 border-t-0 bg-card/95 shadow-none dark:bg-background",
+        "relative overflow-hidden rounded-none border-0 bg-card/95 shadow-none dark:bg-background",
         className
       )}
     >

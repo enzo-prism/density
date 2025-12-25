@@ -9,7 +9,7 @@ const QuoteTicker = dynamic(() => import("@/components/QuoteTicker"), {
   ssr: false,
   loading: () => (
     <div
-      className="min-h-[80px] border-b border-border bg-card/95 dark:bg-background sm:min-h-[52px]"
+      className="min-h-[80px] bg-card/95 dark:bg-background sm:min-h-[52px]"
       aria-hidden="true"
     />
   ),
