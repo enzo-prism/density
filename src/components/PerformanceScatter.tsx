@@ -312,14 +312,6 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                                 {formatDuration(item.durationSeconds)}
                               </span>
                             </div>
-                            <a
-                              href={`https://www.youtube.com/watch?v=${item.id}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="inline-flex text-xs font-semibold text-foreground underline underline-offset-4"
-                            >
-                              Open on YouTube
-                            </a>
                           </div>
                         )}
                       />
@@ -386,14 +378,6 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                     </span>
                   </div>
                 </div>
-                <a
-                  href={`https://www.youtube.com/watch?v=${selectedVideo.id}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-3 inline-flex text-xs font-semibold text-foreground underline underline-offset-4"
-                >
-                  Open on YouTube
-                </a>
               </div>
             ) : null}
             {isCoarsePointer ? (
