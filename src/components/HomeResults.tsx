@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Heatmap from "@/components/Heatmap";
 import type { HeatmapMetric } from "@/components/Heatmap";
 import StatsCards from "@/components/StatsCards";
-import UploadMomentumChart from "@/components/UploadMomentumChart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -47,6 +46,22 @@ const BestPostingDay = dynamic(() => import("@/components/BestPostingDay"), {
     </Card>
   ),
 });
+
+const UploadMomentumChart = dynamic(
+  () => import("@/components/UploadMomentumChart"),
+  {
+    ssr: false,
+    loading: () => (
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <Skeleton className="h-5 w-48" />
+          <Skeleton className="h-52 w-full" />
+          <Skeleton className="h-4 w-40" />
+        </CardContent>
+      </Card>
+    ),
+  }
+);
 
 type HomeResultsProps = {
   result: AnalyzeResponse | null;
@@ -122,6 +137,40 @@ export default function HomeResults({
   }, [performanceOk, performance]);
 
   const heatmapMetric = performanceOk ? metric : "posts";
+
+  useEffect(() => {
+    if (!result) {
+      return;
+    }
+    const requestIdle = (
+      window as Window & {
+        requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
+      }
+    ).requestIdleCallback;
+    const cancelIdle = (
+      window as Window & { cancelIdleCallback?: (id: number) => void }
+    ).cancelIdleCallback;
+    let idleId: number | null = null;
+    let timeoutId: number | null = null;
+    const prefetch = () => {
+      void import("@/components/UploadMomentumChart");
+      void import("@/components/PerformanceScatter");
+      void import("@/components/BestPostingDay");
+    };
+    if (requestIdle) {
+      idleId = requestIdle(prefetch, { timeout: 1500 });
+    } else {
+      timeoutId = window.setTimeout(prefetch, 800);
+    }
+    return () => {
+      if (idleId !== null && cancelIdle) {
+        cancelIdle(idleId);
+      }
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [result]);
 
   useEffect(() => {
     if (!performanceOk || performanceReady) {

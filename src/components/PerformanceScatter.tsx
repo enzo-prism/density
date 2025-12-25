@@ -97,6 +97,7 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
   const formatter = useMemo(() => new Intl.NumberFormat("en-US"), []);
   const isCoarsePointer = useCoarsePointer();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showAllPoints, setShowAllPoints] = useState(false);
   const axisDateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat("en-US", {
@@ -124,10 +125,89 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
       .filter((video) => Number.isFinite(video.timestamp));
   }, [videos]);
 
+  const dataByTime = useMemo(
+    () => [...data].sort((a, b) => a.timestamp - b.timestamp),
+    [data]
+  );
+
   const sortedVideos = useMemo(
     () => [...data].sort((a, b) => b.timestamp - a.timestamp),
     [data]
   );
+
+  const samplingConfig = useMemo(
+    () => ({
+      maxPoints: isCoarsePointer ? 900 : 1400,
+      targetPoints: isCoarsePointer ? 450 : 900,
+      topViews: isCoarsePointer ? 120 : 180,
+    }),
+    [isCoarsePointer]
+  );
+
+  const basePlotData = useMemo(() => {
+    if (
+      showAllPoints ||
+      dataByTime.length <= samplingConfig.maxPoints ||
+      dataByTime.length === 0
+    ) {
+      return dataByTime;
+    }
+    const topByViews = [...dataByTime]
+      .sort((a, b) => b.views - a.views)
+      .slice(0, samplingConfig.topViews);
+    const selected = new Map<string, ScatterDatum>();
+    for (const item of topByViews) {
+      selected.set(item.id, item);
+    }
+    const first = dataByTime[0];
+    const last = dataByTime[dataByTime.length - 1];
+    if (first) {
+      selected.set(first.id, first);
+    }
+    if (last) {
+      selected.set(last.id, last);
+    }
+    const remainingTarget = Math.max(
+      0,
+      samplingConfig.targetPoints - selected.size
+    );
+    if (remainingTarget > 0) {
+      const stride = Math.max(
+        1,
+        Math.floor(dataByTime.length / remainingTarget)
+      );
+      for (
+        let index = 0;
+        index < dataByTime.length && selected.size < samplingConfig.targetPoints;
+        index += stride
+      ) {
+        const item = dataByTime[index];
+        if (item) {
+          selected.set(item.id, item);
+        }
+      }
+    }
+    return Array.from(selected.values()).sort(
+      (a, b) => a.timestamp - b.timestamp
+    );
+  }, [dataByTime, samplingConfig, showAllPoints]);
+
+  const selectedVideo = useMemo(
+    () => data.find((video) => video.id === selectedId) ?? null,
+    [data, selectedId]
+  );
+
+  const plotData = useMemo(() => {
+    if (!selectedVideo) {
+      return basePlotData;
+    }
+    if (basePlotData.some((item) => item.id === selectedVideo.id)) {
+      return basePlotData;
+    }
+    return [...basePlotData, selectedVideo].sort(
+      (a, b) => a.timestamp - b.timestamp
+    );
+  }, [basePlotData, selectedVideo]);
 
   const yAxisWidth = useMemo(() => {
     if (data.length === 0) {
@@ -146,10 +226,18 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
     return Math.min(maxWidth, Math.max(minWidth, estimated));
   }, [data, formatter, isCoarsePointer]);
 
-  const selectedVideo = useMemo(
-    () => data.find((video) => video.id === selectedId) ?? null,
-    [data, selectedId]
-  );
+  const disableAnimations = useMemo(() => {
+    const threshold = isCoarsePointer ? 500 : 900;
+    return plotData.length > threshold;
+  }, [isCoarsePointer, plotData.length]);
+
+  const axisLabelMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const item of dataByTime) {
+      map.set(item.timestamp, axisDateFormatter.format(new Date(item.timestamp)));
+    }
+    return map;
+  }, [axisDateFormatter, dataByTime]);
 
   const chartConfig = useMemo(
     () => ({
@@ -236,6 +324,26 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                 Tap a dot to pin details below.
               </div>
             ) : null}
+            {dataByTime.length > samplingConfig.maxPoints ? (
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>
+                  {showAllPoints
+                    ? `Showing all ${formatter.format(dataByTime.length)} videos.`
+                    : `Showing ${formatter.format(plotData.length)} of ${formatter.format(
+                        dataByTime.length
+                      )} videos for faster rendering.`}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-2 text-xs"
+                  onClick={() => setShowAllPoints((current) => !current)}
+                >
+                  {showAllPoints ? "Show fewer" : "Show all"}
+                </Button>
+              </div>
+            ) : null}
             <ChartContainer
               config={chartConfig}
               className="h-[380px] w-full aspect-auto sm:h-[320px]"
@@ -258,7 +366,8 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                   domain={["auto", "auto"]}
                   tickFormatter={(value) =>
                     Number.isFinite(value)
-                      ? axisDateFormatter.format(new Date(value))
+                      ? axisLabelMap.get(value) ??
+                        axisDateFormatter.format(new Date(value))
                       : ""
                   }
                   tickMargin={8}
@@ -339,12 +448,13 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
                 />
                 <ChartLegend content={<ChartLegendContent />} />
                 <Scatter
-                  data={data}
+                  data={plotData}
                   dataKey="views"
                   name="views"
                   fill="var(--color-views)"
                   stroke="var(--color-views)"
                   fillOpacity={0.7}
+                  isAnimationActive={!disableAnimations}
                   shape={renderDot}
                 />
               </ScatterChart>

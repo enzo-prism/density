@@ -108,6 +108,7 @@ export default function UploadMomentumChart({
       }),
     []
   );
+  const disableAnimations = useMemo(() => chartData.length > 400, [chartData.length]);
 
   return (
     <Card>
@@ -200,6 +201,7 @@ export default function UploadMomentumChart({
               stroke="var(--color-uploads)"
               fill={`url(#uploads-gradient-${gradientId})`}
               fillOpacity={1}
+              isAnimationActive={!disableAnimations}
             />
             <Line
               dataKey="avg7"
@@ -207,6 +209,7 @@ export default function UploadMomentumChart({
               stroke="var(--color-avg7)"
               strokeWidth={2}
               dot={false}
+              isAnimationActive={!disableAnimations}
             />
             <ChartLegend content={<ChartLegendContent />} />
           </ComposedChart>
