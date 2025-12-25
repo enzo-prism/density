@@ -254,25 +254,6 @@ export default function HomeResults({
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
-              <Skeleton className="h-5 w-48" />
-              <Skeleton className="h-52 w-full" />
-              <Skeleton className="h-4 w-40" />
-            </CardContent>
-          </Card>
-        ) : result ? (
-          <UploadMomentumChart
-            days={result.days}
-            startDate={result.startDate}
-            endDate={result.endDate}
-            timezone={result.timezone}
-          />
-        ) : null}
-      </div>
-
-      <div className="order-4">
-        {showSkeletons ? (
-          <Card>
-            <CardContent className="space-y-4 pt-6">
               <Skeleton className="h-5 w-36" />
               <Skeleton className="h-48 w-full" />
               <Skeleton className="h-4 w-40" />
@@ -290,6 +271,25 @@ export default function HomeResults({
               onMetricChange={setMetric}
             />
           </TooltipProvider>
+        ) : null}
+      </div>
+
+      <div className="order-4">
+        {showSkeletons ? (
+          <Card>
+            <CardContent className="space-y-4 pt-6">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-52 w-full" />
+              <Skeleton className="h-4 w-40" />
+            </CardContent>
+          </Card>
+        ) : result ? (
+          <UploadMomentumChart
+            days={result.days}
+            startDate={result.startDate}
+            endDate={result.endDate}
+            timezone={result.timezone}
+          />
         ) : null}
       </div>
 
