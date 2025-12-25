@@ -146,7 +146,6 @@ const quotes = [
     text: "The secret of success is consistency of purpose.",
     author: "Eliud Kipchoge",
   },
-  { text: "You don't get what you wish for. You get what you work for.", author: "Tom Brady" },
   { text: "Pain is temporary. Pride is forever.", author: "Evander Holyfield" },
   {
     text: "I knew that if I failed I wouldn't regret that, but I knew the one thing I might regret is not trying.",
@@ -388,7 +387,6 @@ const quotes = [
     text: "Everything negative - pressure, challenges - is an opportunity.",
     author: "Kobe Bryant",
   },
-  { text: "To be successful, you have to be selfish.", author: "Tom Brady" },
   { text: "I don't like to lose - at anything.", author: "Serena Williams" },
   { text: "If you don't lose, you can't enjoy the victories.", author: "Rafael Nadal" },
   { text: "You miss 100% of the shots you don't take.", author: "Wayne Gretzky" },
