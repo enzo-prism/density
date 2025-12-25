@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Heatmap from "@/components/Heatmap";
 import type { HeatmapMetric } from "@/components/Heatmap";
 import StatsCards from "@/components/StatsCards";
+import UploadMomentumChart from "@/components/UploadMomentumChart";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -75,7 +76,12 @@ export default function HomeResults({
 }: HomeResultsProps) {
   const showSkeletons = loading;
   const [metric, setMetric] = useState<HeatmapMetric>("posts");
-  const [performanceReady, setPerformanceReady] = useState(false);
+  const [performanceReady, setPerformanceReady] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return typeof IntersectionObserver === "undefined";
+  });
   const performanceRef = useRef<HTMLDivElement | null>(null);
   const performance = result?.performance;
   const performanceOk = performance?.status === "ok";
@@ -103,7 +109,6 @@ export default function HomeResults({
       return;
     }
     if (typeof IntersectionObserver === "undefined") {
-      setPerformanceReady(true);
       return;
     }
     const observer = new IntersectionObserver(
@@ -210,7 +215,38 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-2 sm:order-3">
+      <div className="order-2">
+        {showSkeletons ? (
+          <div className="grid gap-4 md:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={`stat-skel-${index}`} className="h-28 w-full" />
+            ))}
+          </div>
+        ) : result ? (
+          <StatsCards stats={result.stats} />
+        ) : null}
+      </div>
+
+      <div className="order-3">
+        {showSkeletons ? (
+          <Card>
+            <CardContent className="space-y-4 pt-6">
+              <Skeleton className="h-5 w-48" />
+              <Skeleton className="h-52 w-full" />
+              <Skeleton className="h-4 w-40" />
+            </CardContent>
+          </Card>
+        ) : result ? (
+          <UploadMomentumChart
+            days={result.days}
+            startDate={result.startDate}
+            endDate={result.endDate}
+            timezone={result.timezone}
+          />
+        ) : null}
+      </div>
+
+      <div className="order-4">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -233,20 +269,8 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-3 sm:order-2">
-        {showSkeletons ? (
-          <div className="grid gap-4 md:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, index) => (
-              <Skeleton key={`stat-skel-${index}`} className="h-28 w-full" />
-            ))}
-          </div>
-        ) : result ? (
-          <StatsCards stats={result.stats} />
-        ) : null}
-      </div>
-
       {!showSkeletons && result ? (
-        <div ref={performanceRef} className="order-4 space-y-4">
+        <div ref={performanceRef} className="order-5 space-y-4">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
