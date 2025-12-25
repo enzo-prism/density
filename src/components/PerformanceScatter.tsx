@@ -144,8 +144,9 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
   );
 
   const renderDot = useCallback(
-    (props: ScatterDotProps) => {
-      const { cx, cy, payload, onMouseEnter, onMouseLeave } = props;
+    (props: unknown) => {
+      const { cx, cy, payload, onMouseEnter, onMouseLeave } =
+        props as ScatterDotProps;
       if (!payload || !Number.isFinite(cx) || !Number.isFinite(cy)) {
         return null;
       }
