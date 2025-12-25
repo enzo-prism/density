@@ -394,7 +394,9 @@ export default function HomeClient() {
               />
               {sample ? (
                 <div className="flex items-center gap-3 pt-2 text-xs text-muted-foreground">
-                  <span className="uppercase tracking-[0.2em]">Sample:</span>
+                  <span className="uppercase tracking-[0.2em] opacity-[0.24]">
+                    Sample:
+                  </span>
                   <Button
                     type="button"
                     variant="outline"
