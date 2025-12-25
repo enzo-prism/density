@@ -364,9 +364,6 @@ export default function HomeResults({
               <h2 className="text-lg font-semibold text-foreground">
                 Performance overlay
               </h2>
-              <p className="text-xs text-muted-foreground">
-                Views, likes, comments, and duration context for each upload.
-              </p>
             </div>
             {totalsSummary ? (
               <div className="text-xs text-muted-foreground">

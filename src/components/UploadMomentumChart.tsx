@@ -119,7 +119,10 @@ export default function UploadMomentumChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <ChartContainer config={chartConfig} className="min-h-[220px] w-full">
+        <ChartContainer
+          config={chartConfig}
+          className="min-h-[220px] h-[260px] w-full aspect-auto sm:h-[240px]"
+        >
           <ComposedChart data={chartData} accessibilityLayer>
             <defs>
               <linearGradient id={`uploads-gradient-${gradientId}`} x1="0" y1="0" x2="0" y2="1">
