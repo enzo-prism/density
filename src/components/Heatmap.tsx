@@ -226,6 +226,7 @@ export default function Heatmap({
                 const tooltipDate = tooltipDateFormatter.format(
                   new Date(`${date}T00:00:00Z`)
                 );
+                const isSelected = selectedDate === date;
                 return (
                   <Tooltip key={date}>
                     <TooltipTrigger asChild>
@@ -236,7 +237,10 @@ export default function Heatmap({
                         }`}
                         className={cn(
                           heatmapCellVariants({ intensity }),
-                          "cursor-pointer"
+                          "cursor-pointer",
+                          isSelected
+                            ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-background dark:ring-emerald-300"
+                            : ""
                         )}
                         onClick={() =>
                           setSelectedDate((current) =>
