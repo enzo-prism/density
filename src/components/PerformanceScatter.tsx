@@ -155,6 +155,9 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
       const baseRadius = isCoarsePointer ? 5 : 4;
       const hitRadius = isCoarsePointer ? 16 : 10;
       const ringRadius = isCoarsePointer ? 9 : 7;
+      const ringColor = isCoarsePointer ? "rgb(16 185 129)" : "var(--color-views)";
+      const ringOpacity = isCoarsePointer ? 1 : 0.6;
+      const ringWidth = isCoarsePointer ? 3 : 2;
       return (
         <g
           data-video-dot="true"
@@ -172,17 +175,6 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
               setSelectedId(payload.id);
             }}
           />
-          {isSelected ? (
-            <circle
-              cx={cx}
-              cy={cy}
-              r={ringRadius}
-              fill="none"
-              stroke="var(--color-views)"
-              strokeOpacity={0.6}
-              strokeWidth={2}
-            />
-          ) : null}
           <circle
             cx={cx}
             cy={cy}
@@ -190,6 +182,17 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
             fill="var(--color-views)"
             fillOpacity={0.75}
           />
+          {isSelected ? (
+            <circle
+              cx={cx}
+              cy={cy}
+              r={ringRadius}
+              fill="none"
+              stroke={ringColor}
+              strokeOpacity={ringOpacity}
+              strokeWidth={ringWidth}
+            />
+          ) : null}
         </g>
       );
     },
