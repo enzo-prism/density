@@ -144,11 +144,11 @@ export default function PerformanceScatter({ videos }: PerformanceScatterProps) 
   );
 
   const renderDot = useCallback(
-    (props: unknown) => {
+    (props: unknown): JSX.Element => {
       const { cx, cy, payload, onMouseEnter, onMouseLeave } =
         props as ScatterDotProps;
       if (!payload || !Number.isFinite(cx) || !Number.isFinite(cy)) {
-        return null;
+        return <g />;
       }
       const isSelected = payload.id === selectedId;
       const baseRadius = isCoarsePointer ? 5 : 4;
