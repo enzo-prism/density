@@ -86,6 +86,29 @@ export default function HomeResults({
   const performance = result?.performance;
   const performanceOk = performance?.status === "ok";
   const performanceDays = performanceOk ? performance.days : undefined;
+  const performanceVideos =
+    performanceOk && performance?.status === "ok" ? performance.videos : null;
+  const dayBreakdown = useMemo(() => {
+    if (!performanceVideos) {
+      return undefined;
+    }
+    const breakdown: Record<string, { videos: number; shorts: number }> = {};
+    for (const video of performanceVideos) {
+      const date = video.localDate;
+      if (!date) {
+        continue;
+      }
+      const isShort = video.durationSeconds > 0 && video.durationSeconds <= 60;
+      const entry = breakdown[date] ?? { videos: 0, shorts: 0 };
+      if (isShort) {
+        entry.shorts += 1;
+      } else {
+        entry.videos += 1;
+      }
+      breakdown[date] = entry;
+    }
+    return breakdown;
+  }, [performanceVideos]);
   const totalsSummary = useMemo(() => {
     if (!performanceOk || !performance || performance.status !== "ok") {
       return null;
@@ -262,6 +285,7 @@ export default function HomeResults({
               endDate={result.endDate}
               days={result.days}
               performanceDays={performanceDays}
+              dayBreakdown={dayBreakdown}
               selectedMetric={heatmapMetric}
               onMetricChange={setMetric}
             />

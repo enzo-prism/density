@@ -84,6 +84,7 @@ type HeatmapProps = {
   endDate: string;
   days: Record<string, number>;
   performanceDays?: Record<string, { views: number; likes: number; comments: number }>;
+  dayBreakdown?: Record<string, { videos: number; shorts: number }>;
   selectedMetric?: HeatmapMetric;
   onMetricChange?: (metric: HeatmapMetric) => void;
 };
@@ -100,6 +101,7 @@ export default function Heatmap({
   endDate,
   days,
   performanceDays,
+  dayBreakdown,
   selectedMetric,
   onMetricChange,
 }: HeatmapProps) {
@@ -148,6 +150,13 @@ export default function Heatmap({
   }, [metric, performanceDays]);
 
   const selectedPostsCount = selectedDate ? days[selectedDate] ?? 0 : 0;
+  const selectedBreakdown = selectedDate ? dayBreakdown?.[selectedDate] : undefined;
+  const selectedVideosCount = selectedBreakdown?.videos ?? 0;
+  const selectedShortsCount = selectedBreakdown?.shorts ?? 0;
+  const selectedUnknownCount = selectedDate
+    ? Math.max(0, selectedPostsCount - (selectedVideosCount + selectedShortsCount))
+    : 0;
+  const adjustedVideosCount = selectedVideosCount + selectedUnknownCount;
   const selectedMetricValue =
     selectedDate && metric !== "posts" && performanceDays
       ? performanceDays[selectedDate]?.[metric] ?? 0
@@ -274,6 +283,15 @@ export default function Heatmap({
           <div className="text-xs text-muted-foreground">
             Selected: {selectedDate} • {selectedPostsCount}{" "}
             {selectedPostsCount === 1 ? "post" : "posts"}
+            {dayBreakdown ? (
+              <>
+                {" "}
+                • {adjustedVideosCount}{" "}
+                {adjustedVideosCount === 1 ? "video" : "videos"} •{" "}
+                {selectedShortsCount}{" "}
+                {selectedShortsCount === 1 ? "short" : "shorts"}
+              </>
+            ) : null}
             {metric !== "posts" ? (
               <>
                 {" "}
