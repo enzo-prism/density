@@ -83,9 +83,9 @@ export default function HomeClient() {
 
   const [channelInput, setChannelInput] = useState("");
   const [timezone, setTimezone] = useState("UTC");
-  const [lookbackDays, setLookbackDays] = useState(365);
-  const [rangeSelection, setRangeSelection] = useState("365");
-  const [customDaysInput, setCustomDaysInput] = useState("365");
+  const [lookbackDays, setLookbackDays] = useState(30);
+  const [rangeSelection, setRangeSelection] = useState("30");
+  const [customDaysInput, setCustomDaysInput] = useState("30");
   const [result, setResult] = useState<AnalyzeResponse | null>(null);
   const [resultRange, setResultRange] = useState<"days" | "lifetime">("days");
   const [error, setError] = useState<string | null>(null);
