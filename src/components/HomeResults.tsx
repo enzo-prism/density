@@ -288,7 +288,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-2">
+      <div className="order-3">
         {showSkeletons ? (
           <div className="grid gap-4 md:grid-cols-3">
             {Array.from({ length: 3 }).map((_, index) => (
@@ -300,7 +300,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-3">
+      <div className="order-4">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -314,7 +314,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-4">
+      <div className="order-2">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
