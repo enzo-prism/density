@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Copy, Youtube } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Heatmap from "@/components/Heatmap";
 import StatsCards from "@/components/StatsCards";
@@ -209,13 +210,21 @@ export default function HomeResults({
                     <Skeleton className="h-4 w-32" />
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <Skeleton className="h-9 w-full sm:w-32" />
-                  <Skeleton className="h-9 w-full sm:w-36" />
+                <div className="flex items-center gap-2 sm:justify-end">
+                  <Skeleton className="h-9 w-9" />
+                  <Skeleton className="h-9 w-9" />
                 </div>
               </div>
               <Separator />
-              <Skeleton className="h-4 w-72" />
+              <div className="space-y-3">
+                <Skeleton className="h-4 w-72" />
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                  <Skeleton className="h-8 w-16 rounded-full" />
+                  <Skeleton className="h-8 w-24 rounded-full" />
+                  <Skeleton className="h-8 w-28 rounded-full" />
+                </div>
+              </div>
             </CardContent>
           </Card>
         ) : result ? (
@@ -241,42 +250,83 @@ export default function HomeResults({
                     ) : null}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <div className="flex items-center gap-2 sm:justify-end">
                   {channelUrl ? (
                     <Button
                       asChild
-                      variant="outline"
-                      size="sm"
-                      className="w-full sm:w-auto"
+                      variant="ghost"
+                      size="icon"
+                      className="text-muted-foreground hover:text-foreground"
+                      aria-label="View on YouTube"
+                      title="View on YouTube"
                     >
                       <a href={channelUrl} target="_blank" rel="noreferrer">
-                        View on YouTube
+                        <Youtube className="h-4 w-4" aria-hidden="true" />
                       </a>
                     </Button>
                   ) : null}
                   <Button
-                    variant="secondary"
-                    size="sm"
-                    className="w-full sm:w-auto"
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="text-muted-foreground hover:text-foreground"
+                    aria-label="Copy share link"
+                    title="Copy share link"
                     onClick={onCopyShareLink}
                   >
-                    Copy share link
+                    <Copy className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
               </div>
               <Separator />
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
-                <span>
-                  {result.startDate} → {result.endDate}
-                </span>
-                <span className="hidden sm:inline">•</span>
-                <span>
-                  {resultRange === "lifetime"
-                    ? "Lifetime"
-                    : `${result.lookbackDays} days`}
-                </span>
-                <span className="hidden sm:inline">•</span>
-                <span>{result.timezone}</span>
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground sm:text-sm">
+                  <span>
+                    {result.startDate} → {result.endDate}
+                  </span>
+                  <span className="hidden sm:inline">•</span>
+                  <span>
+                    {resultRange === "lifetime"
+                      ? "Lifetime"
+                      : `${result.lookbackDays} days`}
+                  </span>
+                  <span className="hidden sm:inline">•</span>
+                  <span>{result.timezone}</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <a href="#heatmap">Heatmap</a>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <a href="#rank">Rank</a>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <a href="#momentum">Momentum</a>
+                  </Button>
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground"
+                  >
+                    <a href="#performance">Performance</a>
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -295,7 +345,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-4">
+      <div id="rank" className="order-4 scroll-mt-24">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -309,7 +359,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-2">
+      <div id="heatmap" className="order-2 scroll-mt-24">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -330,7 +380,7 @@ export default function HomeResults({
         ) : null}
       </div>
 
-      <div className="order-5">
+      <div id="momentum" className="order-5 scroll-mt-24">
         {showSkeletons ? (
           <Card>
             <CardContent className="space-y-4 pt-6">
@@ -350,7 +400,11 @@ export default function HomeResults({
       </div>
 
       {!showSkeletons && result ? (
-        <div ref={performanceRef} className="order-6 space-y-4">
+        <div
+          id="performance"
+          ref={performanceRef}
+          className="order-6 space-y-4 scroll-mt-24"
+        >
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-foreground">
