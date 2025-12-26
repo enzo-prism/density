@@ -102,6 +102,7 @@ export default function HomeClient() {
     return examples[index] ?? null;
   });
   const autoRunRef = useRef(false);
+  const userEditedChannelRef = useRef(false);
 
   useEffect(() => {
     if (!queryTimezone) {
@@ -151,6 +152,22 @@ export default function HomeClient() {
     } catch {
       // Ignore storage errors (e.g. blocked access).
     }
+  };
+
+  const handleChannelChange = (event: ChangeEvent<HTMLInputElement>) => {
+    userEditedChannelRef.current = true;
+    setChannelInput(event.target.value);
+  };
+
+  const handleSamplePick = () => {
+    if (!sample) {
+      return;
+    }
+    if (channelInput.trim().length > 0) {
+      return;
+    }
+    userEditedChannelRef.current = true;
+    setChannelInput(sample.value);
   };
 
   const analyze = useCallback(
@@ -262,6 +279,9 @@ export default function HomeClient() {
       return;
     }
     if (!privacyReady || !agreedToPrivacy) {
+      return;
+    }
+    if (userEditedChannelRef.current) {
       return;
     }
     autoRunRef.current = true;
@@ -388,7 +408,7 @@ export default function HomeClient() {
               <Input
                 id="channel"
                 value={channelInput}
-                onChange={(event) => setChannelInput(event.target.value)}
+                onChange={handleChannelChange}
                 placeholder="URL or @handle"
                 className="h-12 text-base"
               />
@@ -401,7 +421,7 @@ export default function HomeClient() {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setChannelInput(sample.value)}
+                    onClick={handleSamplePick}
                     className="rounded-full text-xs opacity-[0.24] transition-opacity hover:opacity-100 focus-visible:opacity-100"
                   >
                     {sample.label}
