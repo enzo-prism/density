@@ -83,9 +83,8 @@ export default function Heatmap({
   const tooltipDateFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat("en-US", {
-        weekday: "short",
         year: "numeric",
-        month: "short",
+        month: "numeric",
         day: "numeric",
       }),
     []
