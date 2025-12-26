@@ -172,10 +172,10 @@ export default function Heatmap({
                     </TooltipTrigger>
                     <TooltipContent>
                       <div className="space-y-1">
-                        <div className="text-xs font-medium text-foreground">
+                        <div className="text-xs font-medium text-background">
                           {tooltipDate}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-background/70">
                           Posts: {formatNumber.format(postCount)}
                         </div>
                       </div>
